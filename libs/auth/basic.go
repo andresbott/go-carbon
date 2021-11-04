@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"git.andresbott.com/Golang/carbon/libs/log"
 	"net/http"
 )
 
@@ -12,14 +13,18 @@ type Basic struct {
 	User         UserLogin
 	Redirect     string
 	RedirectCode int
+	Logger       log.LeveledLogger
 }
 
-func (auth *Basic) Middleware(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (auth *Basic) Middleware(next http.Handler) http.Handler {
 
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth.Logger.Info("auth")
 		username, password, ok := r.BasicAuth()
+
 		if ok {
 			if auth.User.AllowLogin(username, password) {
+				auth.Logger.Info("ok")
 				next.ServeHTTP(w, r)
 				return
 			}

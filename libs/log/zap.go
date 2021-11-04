@@ -6,7 +6,8 @@ import (
 
 // Zapper is a utility wrapper to Zap logger
 type Zapper struct {
-	Zap *zap.Logger
+	Zap   *zap.Logger
+	sugar *zap.SugaredLogger
 }
 
 // TODO set log level
@@ -18,65 +19,36 @@ func NewZapper() (*Zapper, error) {
 	}
 
 	l := Zapper{
-		Zap: z,
+		Zap:   z,
+		sugar: z.Sugar(),
 	}
 	return &l, nil
 }
 
-type level int8
-
-const (
-	debug level = iota
-	info
-	warn
-	err
-)
-
-func (z Zapper) write(level level, template string, args ...interface{}) {
-
-	sugar := z.Zap.Sugar()
-
-	switch level {
-	case info:
-		sugar.Infof(template, args)
-		break
-	case warn:
-		sugar.Warnf(template, args)
-		break
-	case err:
-		sugar.Errorf(template, args)
-	case debug:
-		sugar.Debugf(template, args)
-	}
-	z.Zap.Sync() // flushes buffer, if any
-
-}
-
 func (z Zapper) Debugf(template string, args ...interface{}) {
-	z.write(debug, template, args)
+	z.sugar.Debugf(template, args)
 }
-
 func (z Zapper) Debug(msg string) {
-	z.write(debug, msg)
+	z.sugar.Debug(msg)
 }
 
 func (z Zapper) Infof(template string, args ...interface{}) {
-	z.write(info, template, args)
+	z.sugar.Infof(template, args)
 }
 func (z Zapper) Info(msg string) {
-	z.write(info, msg)
+	z.sugar.Info(msg)
 }
 
 func (z Zapper) Warnf(template string, args ...interface{}) {
-	z.write(info, template, args)
+	z.sugar.Warnf(template, args)
 }
 func (z Zapper) Warn(msg string) {
-	z.write(warn, msg)
+	z.sugar.Warn(msg)
 }
 
 func (z Zapper) Errorf(template string, args ...interface{}) {
-	z.write(info, template, args)
+	z.sugar.Errorf(template, args)
 }
 func (z Zapper) Error(msg string) {
-	z.write(err, msg)
+	z.sugar.Error(msg)
 }
