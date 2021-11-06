@@ -16,26 +16,31 @@ type Server struct {
 	logger  logger.LeveledLogger
 }
 
+type Cfg struct {
+	Addr   string
+	Logger logger.LeveledLogger
+}
+
 // NewServer creates a new sever instance that can be started individually
-func NewServer(addr string, log logger.LeveledLogger) *Server {
+func NewServer(cfg Cfg) *Server {
 
-	if addr == "" {
-		addr = ":8080"
+	if cfg.Addr == "" {
+		cfg.Addr = ":8080"
 	}
 
-	if log == nil {
-		log = &logger.SilentLog{}
+	if cfg.Logger == nil {
+		cfg.Logger = &logger.SilentLog{}
 	}
 
-	handler := newMainHandler(log)
+	handler := newMainHandler(cfg.Logger)
 	if handler == nil {
 		panic("nil")
 	}
 
 	return &Server{
-		logger: log,
+		logger: cfg.Logger,
 		server: http.Server{
-			Addr:    addr,
+			Addr:    cfg.Addr,
 			Handler: handler,
 		},
 	}

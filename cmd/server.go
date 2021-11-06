@@ -18,7 +18,9 @@ func serverCmd() *cobra.Command {
 				return err
 			}
 
-			s := server.NewServer("", l)
+			s := server.NewServer(server.Cfg{
+				Logger: l,
+			})
 			return s.Start()
 		},
 	}

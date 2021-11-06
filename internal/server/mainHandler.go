@@ -3,6 +3,7 @@ package server
 import (
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/log"
+	"git.andresbott.com/Golang/carbon/libs/middleware"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -25,17 +26,20 @@ func (st dummyUser) AllowLogin(user string, hash string) bool {
 func newMainHandler(l log.LeveledLogger) *mainHandler {
 
 	r := mux.NewRouter()
+
 	// root page
-	r.Path("/").Handler(&textHandler{
+	// --------------------------
+	rootHandler := textHandler{
 		Text: "root page",
 		Links: map[string]string{
 			"basic": "/basic",
 		},
-		Logger: l,
-	})
+	}
+
+	r.Path("/").Handler(middleware.LoggingMiddleware(&rootHandler, l))
 
 	// page protected by basic auth
-
+	// --------------------------
 	basicAuth := auth.Basic{
 		User:         dummyUser{},
 		Redirect:     "",
@@ -48,10 +52,8 @@ func newMainHandler(l log.LeveledLogger) *mainHandler {
 		Links: map[string]string{
 			"root": "../",
 		},
-		Logger: l,
 	}
-
-	r.Path("/basic").Handler(basicAuth.Middleware(&basiHandler))
+	r.Path("/basic").Handler(middleware.LoggingMiddleware(basicAuth.Middleware(&basiHandler), l))
 
 	handler := mainHandler{
 		router: r,

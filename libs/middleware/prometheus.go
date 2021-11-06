@@ -50,7 +50,7 @@ func prometheusMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// workaround to get status code on middleware
+// ResponseWriter allows to get the status code of the response in the middleware
 type ResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
