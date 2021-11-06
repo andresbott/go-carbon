@@ -7,18 +7,28 @@ import (
 	"time"
 )
 
-func LoggingMiddleware(next http.Handler, l log.LeveledLogger) http.Handler {
+func LoggingMiddleware(next http.Handler, l log.LeveledStructuredLogger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		timeStart := time.Now()
-		l.Infof("Request: ", r.Method, r.RequestURI)
+		l.DebugW("Request",
+			"method", r.Method,
+			"url", r.RequestURI,
+			"time-code", timeStart,
+		)
 
 		logRespWriter := NewResponseWriter(w)
 		next.ServeHTTP(logRespWriter, r)
 
 		timeEnd := time.Now()
 		timeDiff := timeEnd.Sub(timeStart)
-		l.Infof("Response: ", timeDiff, r.RequestURI, logRespWriter.statusCode)
+		_ = timeDiff
+		l.DebugW("Response: ",
+			"duration", timeDiff,
+			"url", r.RequestURI,
+			"status-code", logRespWriter.statusCode,
+			"time-code", timeStart,
+		)
 
 		return
 	})

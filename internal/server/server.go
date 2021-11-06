@@ -59,7 +59,7 @@ func (srv *Server) Start() error {
 		done <- true
 	}()
 
-	srv.logger.Infof("Starting server on: %s", srv.server.Addr)
+	srv.logger.InfoF("Starting server on: %s", srv.server.Addr)
 	if err := srv.server.ListenAndServe(); err != http.ErrServerClosed {
 		return err
 	}
@@ -74,8 +74,8 @@ func (srv *Server) Stop() {
 	defer cancel()
 
 	if err := srv.server.Shutdown(ctx); err != nil {
-		srv.logger.Infof("shutdown: %v", err)
+		srv.logger.WarnF("shutdown: %v", err)
 	}
-	srv.logger.Infof("server stopped %s", "")
+	srv.logger.Info("server stopped")
 
 }

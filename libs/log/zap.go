@@ -25,30 +25,50 @@ func NewZapper() (*Zapper, error) {
 	return &l, nil
 }
 
-func (z Zapper) Debugf(template string, args ...interface{}) {
-	z.sugar.Debugf(template, args)
-}
+//---  debug
+
 func (z Zapper) Debug(msg string) {
 	z.sugar.Debug(msg)
 }
-
-func (z Zapper) Infof(template string, args ...interface{}) {
-	z.sugar.Infof(template, args)
+func (z Zapper) DebugF(template string, args ...interface{}) {
+	z.sugar.Debugf(template, args...)
 }
+func (z Zapper) DebugW(msg string, kvs ...interface{}) {
+	z.sugar.Debugw(msg, kvs...)
+}
+
+//---  info
+
 func (z Zapper) Info(msg string) {
 	z.sugar.Info(msg)
 }
-
-func (z Zapper) Warnf(template string, args ...interface{}) {
-	z.sugar.Warnf(template, args)
+func (z Zapper) InfoF(template string, args ...interface{}) {
+	z.sugar.Infof(template, args...)
 }
+func (z Zapper) InfoW(msg string, kvs ...interface{}) {
+	z.sugar.Infow(msg, kvs...)
+}
+
+//---  warn
+
 func (z Zapper) Warn(msg string) {
 	z.sugar.Warn(msg)
 }
-
-func (z Zapper) Errorf(template string, args ...interface{}) {
-	z.sugar.Errorf(template, args)
+func (z Zapper) WarnF(template string, args ...interface{}) {
+	z.sugar.Warnf(template, args...)
 }
+func (z Zapper) WarnW(msg string, kvs ...interface{}) {
+	z.sugar.Warnw(msg, kvs...)
+}
+
+//---  error
+
 func (z Zapper) Error(msg string) {
 	z.sugar.Error(msg)
+}
+func (z Zapper) ErrorF(template string, args ...interface{}) {
+	z.sugar.Errorf(template, args...)
+}
+func (z Zapper) ErrorW(msg string, kvs ...interface{}) {
+	z.sugar.Errorw(msg, kvs...)
 }
