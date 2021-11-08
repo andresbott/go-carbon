@@ -2,13 +2,12 @@ package user
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"time"
 )
 
+// Manager is an opinionated user manager that stores the information on a gorm database
 type Manager struct {
-	// todo use interface instead of database
 	db *gorm.DB
 }
 
@@ -17,86 +16,91 @@ func NewManager(db *gorm.DB) *Manager {
 
 	// Migrate the schema
 	// todo auto migration error handling
-	db.AutoMigrate(&user{})
+	db.AutoMigrate(&userModel{})
 
 	return &Manager{
 		db: db,
 	}
 }
 
-type user struct {
+// userModel is the database representation of the user
+type userModel struct {
 	gorm.Model
-	Name  string
-	Email string
-	Pw    string
+	Name    string
+	Email   string
+	Pw      string
+	Enabled bool
 	// last login
 	// login location
 }
 
-type CreateUserOpts struct {
+type User struct {
 	Name  string
 	Email string
 	Pw    string
 }
 
-func (mng Manager) CreateUser(opts CreateUserOpts) error {
+func (mng Manager) CreateUser(usr User) error {
 
-	if opts.Name == "" {
+	if usr.Name == "" {
 		return errors.New("name cannot be empty")
 	}
 
-	if opts.Email == "" {
+	if usr.Email == "" {
 		// todo add email structure verifications
 		return errors.New("email cannot be empty")
 	}
 
-	if opts.Pw == "" {
-		// todo pw length verification
+	if usr.Pw == "" {
+		// todo pw length and complexity verification
 		return errors.New("password cannot be empty")
 	}
 
-	hashPasswd, err := hashPw(opts.Pw, 15)
+	// generate bcrypt hashed password
+	hashedPasswd, err := bcrypt.GenerateFromPassword([]byte(usr.Pw), 15)
 	if err != nil {
 		return err
 	}
 
-	usr := user{
-		Name:  opts.Name,
-		Email: opts.Email,
-		Pw:    hashPasswd,
+	usrModel := userModel{
+		Name:  usr.Name,
+		Email: usr.Email,
+		Pw:    string(hashedPasswd),
 	}
 
-	mng.db.Create(&usr)
+	mng.db.Create(&usrModel)
 	return nil
 }
 
 // CheckLogin checks if the user provided password is correct for login
 // if no error is returned login is successful
-func (mng Manager) CheckLogin(email string, pw string) bool {
+func (mng Manager) CheckLogin(user string, providedPass string) bool {
 
-	var usr user
+	var usr userModel
 
-	result := mng.db.First(&usr, "email = ?", email)
+	result := mng.db.First(&usr, "email = ?", user)
 
 	if result.RowsAffected == 0 {
 		return false
 	}
 
-	return comparePw(pw, usr.Pw)
-}
-
-// GenJwtToken generates a signed jwt token
-func GenJwtToken() (string, error) {
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"foo": "bar",
-		"nbf": time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
-	})
-
-	hmacSampleSecret := []byte("secret")
-	return token.SignedString(hmacSampleSecret)
+	err := bcrypt.CompareHashAndPassword([]byte(usr.Pw), []byte(providedPass))
+	return err == nil
 
 }
+
+//// GenJwtToken generates a signed jwt token
+//func GenJwtToken() (string, error) {
+//
+//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+//		"foo": "bar",
+//		"nbf": time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
+//	})
+//
+//	hmacSampleSecret := []byte("secret")
+//	return token.SignedString(hmacSampleSecret)
+//
+//}
 
 // use jwt to create a session ?
 // login to create a session directly

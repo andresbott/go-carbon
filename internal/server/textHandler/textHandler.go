@@ -1,4 +1,4 @@
-package server
+package textHandler
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-type textHandler struct {
+type Handler struct {
 	Text  string
 	Links map[string]string
 }
 
-func (h *textHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", " text/html")
 	if r.Method == http.MethodGet {

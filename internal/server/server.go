@@ -32,7 +32,7 @@ func NewServer(cfg Cfg) *Server {
 		cfg.Logger = &logger.SilentLog{}
 	}
 
-	handler := newMainHandler(cfg.Logger)
+	handler := newRootHandler(cfg.Logger)
 	if handler == nil {
 		panic("nil")
 	}
