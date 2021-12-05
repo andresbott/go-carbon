@@ -8,26 +8,34 @@ import (
 
 // Manager is an opinionated user manager that stores the information on a gorm database
 type Manager struct {
-	db *gorm.DB
+	db               *gorm.DB
+	bcryptDifficulty int // exposed as parameter for make tests faster
+}
+
+type ManagerOpts struct {
+	BcryptDifficulty int
 }
 
 // NewManager creates an instance of user manager
-func NewManager(db *gorm.DB) *Manager {
+func NewManager(db *gorm.DB, opts ManagerOpts) (*Manager, error) {
 
 	// Migrate the schema
-	// todo auto migration error handling
-	db.AutoMigrate(&userModel{})
+	err := db.AutoMigrate(&userModel{})
+	if err != nil {
+		return nil, err
+	}
 
 	return &Manager{
-		db: db,
-	}
+		db:               db,
+		bcryptDifficulty: opts.BcryptDifficulty, // set the cost of the difficulty
+	}, nil
 }
 
 // userModel is the database representation of the user
 type userModel struct {
 	gorm.Model
+	Email   string `gorm:"uniqueIndex"`
 	Name    string
-	Email   string
 	Pw      string
 	Enabled bool
 	// last login
@@ -35,16 +43,21 @@ type userModel struct {
 }
 
 type User struct {
-	Name  string
-	Email string
-	Pw    string
+	Name    string
+	Email   string
+	Pw      string
+	Enabled bool
+}
+
+func (mng Manager) Create(id string, pw string) error {
+	usr := User{
+		Email: id,
+		Pw:    pw,
+	}
+	return mng.CreateUser(usr)
 }
 
 func (mng Manager) CreateUser(usr User) error {
-
-	if usr.Name == "" {
-		return errors.New("name cannot be empty")
-	}
 
 	if usr.Email == "" {
 		// todo add email structure verifications
@@ -57,15 +70,16 @@ func (mng Manager) CreateUser(usr User) error {
 	}
 
 	// generate bcrypt hashed password
-	hashedPasswd, err := bcrypt.GenerateFromPassword([]byte(usr.Pw), 15)
+	hashedPasswd, err := bcrypt.GenerateFromPassword([]byte(usr.Pw), mng.bcryptDifficulty)
 	if err != nil {
 		return err
 	}
 
 	usrModel := userModel{
-		Name:  usr.Name,
-		Email: usr.Email,
-		Pw:    string(hashedPasswd),
+		Name:    usr.Name,
+		Email:   usr.Email,
+		Pw:      string(hashedPasswd),
+		Enabled: usr.Enabled,
 	}
 
 	mng.db.Create(&usrModel)

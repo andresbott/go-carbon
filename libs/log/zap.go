@@ -13,7 +13,7 @@ type Zapper struct {
 // TODO set log level
 // todo, do I want to recreate a logger for every library, or use a package variable
 func NewZapper() (*Zapper, error) {
-	z, err := zap.NewProduction()
+	z, err := zap.NewProduction(zap.AddCallerSkip(1))
 	if err != nil {
 		return nil, err
 	}

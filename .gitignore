@@ -16,5 +16,9 @@
 
 *.iml
 .idea
+
 constants.go
-    sqlite.go
+sqlite.go
+
+# project databases
+carbon.db

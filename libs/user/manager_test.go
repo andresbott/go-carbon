@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -14,7 +15,7 @@ import (
 
 const dbFile = "test.db"
 
-func setup() *Manager {
+func setup(t *testing.T) *Manager {
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
@@ -33,8 +34,14 @@ func setup() *Manager {
 		panic("failed to connect database")
 	}
 
-	mng := NewManager(db)
+	opts := ManagerOpts{
+		BcryptDifficulty: bcrypt.MinCost,
+	}
 
+	mng, err := NewManager(db, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return mng
 
 }
@@ -50,10 +57,10 @@ func clean() {
 
 func TestCreateUser(t *testing.T) {
 
-	mng := setup()
+	mng := setup(t)
 	defer clean()
 
-	err := mng.CreateUser(CreateUserOpts{
+	err := mng.CreateUser(User{
 		Name:  "test",
 		Email: "test@mail.com",
 		Pw:    "1234",
@@ -64,25 +71,25 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	// Reads
-	var got user
+	var got userModel
 	mng.db.First(&got, 1)
 
-	want := user{
+	want := userModel{
 		Name:  "test",
 		Email: "test@mail.com",
 	}
 
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(user{}, "Model", "Pw")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(userModel{}, "Model", "Pw")); diff != "" {
 		t.Errorf("Content mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestLogin(t *testing.T) {
 
-	mng := setup()
+	mng := setup(t)
 	defer clean()
 
-	mng.CreateUser(CreateUserOpts{
+	mng.CreateUser(User{
 		Name:  "test",
 		Email: "test@mail.com",
 		Pw:    "1234",

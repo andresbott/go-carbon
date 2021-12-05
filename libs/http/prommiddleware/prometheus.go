@@ -1,4 +1,4 @@
-package middleware
+package prommiddleware
 
 import (
 	"github.com/gorilla/mux"

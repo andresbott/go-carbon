@@ -1,4 +1,4 @@
-package textHandler
+package simpleText
 
 import (
 	"fmt"
@@ -6,9 +6,14 @@ import (
 	"strings"
 )
 
+// Handler Is a simple handler that will print a list of navigation destination based on the map passed upon creation.
 type Handler struct {
 	Text  string
-	Links map[string]string
+	Links []Link
+}
+type Link struct {
+	Text string
+	Url  string
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -22,8 +27,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if len(h.Links) > 0 {
 			s.WriteString("<ul>")
-			for name, url := range h.Links {
-				s.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>", url, name))
+			for _, link := range h.Links {
+				s.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>", link.Url, link.Text))
 			}
 			s.WriteString("</ul>")
 		}

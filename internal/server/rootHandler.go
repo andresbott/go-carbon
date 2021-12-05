@@ -1,83 +1,81 @@
 package server
 
 import (
-	"git.andresbott.com/Golang/carbon/internal/server/textHandler"
-	userHandler "git.andresbott.com/Golang/carbon/internal/server/user"
-	"git.andresbott.com/Golang/carbon/libs/auth"
+	"git.andresbott.com/Golang/carbon/libs/http/handlers/simpleText"
+	"git.andresbott.com/Golang/carbon/libs/http/handlers/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/log"
-	"git.andresbott.com/Golang/carbon/libs/middleware"
+	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 	"net/http"
 )
-
-type dummyUser struct {
-}
-
-func (st dummyUser) AllowLogin(user string, hash string) bool {
-	if user == "admin" && hash == "admin" {
-		return true
-	}
-	return false
-}
 
 type rootHandler struct {
 	router *mux.Router
 }
 
-// redirectHandler redirects the request to the desired location
-func redirectHandler(url string, permanent bool) func(w http.ResponseWriter, r *http.Request) {
-	code := http.StatusTemporaryRedirect
-	if permanent {
-		code = http.StatusPermanentRedirect
-	}
-	return func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, url, code)
-	}
-}
-
 // newRootHandler generates the main url router handler to be used in the server
-func newRootHandler(l log.LeveledLogger) *rootHandler {
+func newRootHandler(l log.LeveledLogger, db *gorm.DB) *rootHandler {
 
 	r := mux.NewRouter()
 
 	// add logging middleware
 	r.Use(func(handler http.Handler) http.Handler {
-		return middleware.LoggingMiddleware(handler, l)
+		return log.LoggingMiddleware(handler, l)
 	})
 
 	// root page
 	// --------------------------
-	rootPage := textHandler.Handler{
+	rootPage := simpleText.Handler{
 		Text: "root page",
-		Links: map[string]string{
-			"basic": "/basic",
-			"user":  "/user",
+		Links: []simpleText.Link{
+			{
+				Text: "Basic auth protected",
+				Url:  "/basic",
+			},
+			{
+				Text: "User handling",
+				Url:  "/user",
+			},
 		},
 	}
 
-	r.Path("/").Handler(middleware.LoggingMiddleware(&rootPage, l))
+	r.Path("/").Handler(&rootPage)
 
 	// user handling
 	// --------------------------
-	r.Path("/user").HandlerFunc(redirectHandler("/user/", true))
-	userHandler.UserRoutes(r.PathPrefix("/user").Subrouter())
+	userManager, err := user.NewManager(db, user.ManagerOpts{
+		BcryptDifficulty: 4,
+	})
+	if err != nil {
+		panic(err) // it is ok to panic during startup
+	}
+
+	userHandler := userhandler.Handler{
+		Manager:  userManager,
+		SubRoute: "/user",
+	}
+	userHandler.AttachHandlers(r)
 
 	// page protected by basic auth
 	// --------------------------
-	basicAuth := auth.Basic{
-		User:         dummyUser{},
-		Redirect:     "",
-		RedirectCode: 302,
-		Logger:       l,
-	}
-
-	basicAuthPage := textHandler.Handler{
-		Text: "basic auth",
-		Links: map[string]string{
-			"root": "../",
+	basicAuthPage := simpleText.Handler{
+		Text: "Page protected by basic auth",
+		Links: []simpleText.Link{
+			{
+				Text: "back to root",
+				Url:  "../",
+			},
 		},
 	}
-	r.Path("/basic").Handler(basicAuth.Middleware(&basicAuthPage))
+
+	//basicAuth := auth.Basic{
+	//	User:         dummyUser{},
+	//	Redirect:     "",
+	//	RedirectCode: 302,
+	//	Logger:       l,
+	//}
+	r.Path("/basic").Handler(userHandler.GetBasicLoginMiddleware(&basicAuthPage))
 
 	handlr := rootHandler{
 		router: r,
@@ -87,6 +85,5 @@ func newRootHandler(l log.LeveledLogger) *rootHandler {
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//s.logger.Debug(fmt.Sprintf("serving request on url: %s method: %v\n", r.URL, r.Method))
 	h.router.ServeHTTP(w, r)
 }

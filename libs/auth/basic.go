@@ -6,7 +6,7 @@ import (
 )
 
 type UserLogin interface {
-	AllowLogin(user string, hash string) bool
+	AllowLogin(user string, password string) bool
 }
 
 type Basic struct {
@@ -35,7 +35,7 @@ func (auth *Basic) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Access to the staging site", charset="UTF-8"`)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	})
 }

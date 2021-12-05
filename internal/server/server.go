@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	logger "git.andresbott.com/Golang/carbon/libs/log"
+	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +20,7 @@ type Server struct {
 type Cfg struct {
 	Addr   string
 	Logger logger.LeveledLogger
+	Db     *gorm.DB
 }
 
 // NewServer creates a new sever instance that can be started individually
@@ -32,7 +34,7 @@ func NewServer(cfg Cfg) *Server {
 		cfg.Logger = &logger.SilentLog{}
 	}
 
-	handler := newRootHandler(cfg.Logger)
+	handler := newRootHandler(cfg.Logger, cfg.Db)
 	if handler == nil {
 		panic("nil")
 	}
