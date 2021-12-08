@@ -1,9 +1,9 @@
-package userhandler
+package userHandler
 
 import (
 	_ "embed"
 	"fmt"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers/simpleText"
+	"git.andresbott.com/Golang/carbon/libs/http/simpleTextHandler"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
@@ -46,9 +46,9 @@ func (h Handler) AttachHandlers(r *mux.Router) {
 		r = r.PathPrefix("/user").Subrouter()
 	}
 
-	handler := simpleText.Handler{
+	handler := simpleTextHandler.Handler{
 		Text: "user root",
-		Links: []simpleText.Link{
+		Links: []simpleTextHandler.Link{
 			{
 				Text: "back",
 				Url:  "../",

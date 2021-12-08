@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+//todo: add a nonce scope, e.g. this nonce is only valid for action XYZ, alternatively use a different nonce per action
+
 // default length of the generated nonce
 const defaultLen = 32 // same length as uuids
 

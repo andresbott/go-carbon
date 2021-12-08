@@ -1,8 +1,8 @@
 package server
 
 import (
-	"git.andresbott.com/Golang/carbon/libs/http/handlers/simpleText"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers/userhandler"
+	"git.andresbott.com/Golang/carbon/libs/http/simpleTextHandler"
+	"git.andresbott.com/Golang/carbon/libs/http/userHandler"
 	"git.andresbott.com/Golang/carbon/libs/log"
 	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/gorilla/mux"
@@ -15,7 +15,7 @@ type rootHandler struct {
 }
 
 // newRootHandler generates the main url router handler to be used in the server
-func newRootHandler(l log.LeveledLogger, db *gorm.DB) *rootHandler {
+func newRootHandler(l log.LeveledStructuredLogger, db *gorm.DB) *rootHandler {
 
 	r := mux.NewRouter()
 
@@ -26,9 +26,9 @@ func newRootHandler(l log.LeveledLogger, db *gorm.DB) *rootHandler {
 
 	// root page
 	// --------------------------
-	rootPage := simpleText.Handler{
+	rootPage := simpleTextHandler.Handler{
 		Text: "root page",
-		Links: []simpleText.Link{
+		Links: []simpleTextHandler.Link{
 			{
 				Text: "Basic auth protected",
 				Url:  "/basic",
@@ -40,8 +40,6 @@ func newRootHandler(l log.LeveledLogger, db *gorm.DB) *rootHandler {
 		},
 	}
 
-	r.Path("/").Handler(&rootPage)
-
 	// user handling
 	// --------------------------
 	userManager, err := user.NewManager(db, user.ManagerOpts{
@@ -51,37 +49,33 @@ func newRootHandler(l log.LeveledLogger, db *gorm.DB) *rootHandler {
 		panic(err) // it is ok to panic during startup
 	}
 
-	userHandler := userhandler.Handler{
+	usrHndlr := userHandler.Handler{
 		Manager:  userManager,
 		SubRoute: "/user",
 	}
-	userHandler.AttachHandlers(r)
+	usrHndlr.AttachHandlers(r)
 
-	// page protected by basic auth
-	// --------------------------
-	basicAuthPage := simpleText.Handler{
+	basiAuthProtectPage(r, usrHndlr)
+	r.Path("/").Handler(&rootPage)
+
+	return &rootHandler{
+		router: r,
+	}
+}
+
+// add a basic auth protected page
+func basiAuthProtectPage(r *mux.Router, usrHndlr userHandler.Handler) {
+
+	basicAuthPage := simpleTextHandler.Handler{
 		Text: "Page protected by basic auth",
-		Links: []simpleText.Link{
+		Links: []simpleTextHandler.Link{
 			{
 				Text: "back to root",
 				Url:  "../",
 			},
 		},
 	}
-
-	//basicAuth := auth.Basic{
-	//	User:         dummyUser{},
-	//	Redirect:     "",
-	//	RedirectCode: 302,
-	//	Logger:       l,
-	//}
-	r.Path("/basic").Handler(userHandler.GetBasicLoginMiddleware(&basicAuthPage))
-
-	handlr := rootHandler{
-		router: r,
-	}
-
-	return &handlr
+	r.Path("/basic").Handler(usrHndlr.GetBasicLoginMiddleware(&basicAuthPage))
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

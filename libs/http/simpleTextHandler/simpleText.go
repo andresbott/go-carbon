@@ -1,4 +1,4 @@
-package simpleText
+package simpleTextHandler
 
 import (
 	"fmt"

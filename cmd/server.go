@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"git.andresbott.com/Golang/carbon/internal/server"
-	"git.andresbott.com/Golang/carbon/libs/log"
+	"git.andresbott.com/Golang/carbon/libs/log/zero"
+	"git.andresbott.com/Golang/carbon/libs/log/zeroGorm"
 	"github.com/spf13/cobra"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -21,13 +23,14 @@ func serverCmd() *cobra.Command {
 			// and creates the server accordingly
 			// in this case the command is opinionated
 
-			l, err := log.NewZapper()
+			l := zero.NewZero(zero.InfoLevel, nil)
+
+			db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
+				Logger: zeroGorm.New(l.ZeroLog, zeroGorm.Cfg{IgnoreRecordNotFoundError: true}),
+			})
 			if err != nil {
 				return err
 			}
-
-			// todo gorm logger
-			db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
 
 			s := server.NewServer(server.Cfg{
 				Logger: l,
