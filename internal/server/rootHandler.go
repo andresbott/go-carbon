@@ -49,13 +49,13 @@ func newRootHandler(l log.LeveledStructuredLogger, db *gorm.DB) *rootHandler {
 		panic(err) // it is ok to panic during startup
 	}
 
-	usrHndlr := userHandler.Handler{
-		Manager:  userManager,
+	usrHndlr := userHandler.MuxRouter{
+		Handler:  userHandler.Handler{Manager: userManager},
 		SubRoute: "/user",
 	}
 	usrHndlr.AttachHandlers(r)
 
-	basiAuthProtectPage(r, usrHndlr)
+	basiAuthProtectPage(r, usrHndlr.Handler)
 	r.Path("/").Handler(&rootPage)
 
 	return &rootHandler{
