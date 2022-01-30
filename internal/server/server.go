@@ -13,9 +13,8 @@ import (
 )
 
 type Server struct {
-	server  http.Server
-	handler *http.Handler
-	logger  logger.LeveledStructuredLogger
+	server http.Server
+	logger logger.LeveledStructuredLogger
 }
 
 type Cfg struct {

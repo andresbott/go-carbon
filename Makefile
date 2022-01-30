@@ -13,8 +13,13 @@ fmt: ## format go code and run mod tidy
 test: ## run go tests
 	@go test ./... -v -cover
 
-performance: ## run performance tests
-	@go test ./... -v -performance
+lint: ## run go linter
+	@golangci-lint run
+
+verify: fmt test benchmark lint ## run all verification and code structure tiers
+
+benchmark: ## run go benchmarks
+	@go test -run=^$$ -bench=. ./...
 
 serve: ## run go tests
 	@go run main.go server

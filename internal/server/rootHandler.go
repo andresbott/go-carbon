@@ -55,6 +55,7 @@ func newRootHandler(l log.LeveledStructuredLogger, db *gorm.DB) *rootHandler {
 	}
 	usrHndlr.AttachHandlers(r)
 
+	// add the handling of /basic with basic auth protection
 	basiAuthProtectPage(r, usrHndlr.Handler)
 	r.Path("/").Handler(&rootPage)
 

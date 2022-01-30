@@ -33,7 +33,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.WriteString("</ul>")
 		}
 
-		fmt.Fprintf(w, s.String())
+		fmt.Fprint(w, s.String())
 
 		return
 	}

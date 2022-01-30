@@ -23,7 +23,6 @@ func (h Handler) LoginUserGetHandler() func(w http.ResponseWriter, r *http.Reque
 	return func(w http.ResponseWriter, r *http.Request) {
 		data.Path = r.RequestURI
 		_ = tmpl.Execute(w, data)
-		return
 	}
 }
 
@@ -53,7 +52,6 @@ func (h Handler) LoginUserPostHandler() func(w http.ResponseWriter, r *http.Requ
 		// todo get redirect path from form post request
 		http.Redirect(w, r, payload.Redirect, http.StatusSeeOther)
 
-		return
 		// todo handle errors
 		// todo handle user already exists ?
 		// todo add nonce with server storage ?

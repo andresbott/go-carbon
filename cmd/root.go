@@ -23,7 +23,7 @@ func newRootCommand() *cobra.Command {
 	}
 
 	cmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
-		cmd.Help()
+		_ = cmd.Help()
 		return nil
 	})
 

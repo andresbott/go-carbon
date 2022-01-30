@@ -13,7 +13,7 @@ type Basic struct {
 	User         UserLogin
 	Redirect     string
 	RedirectCode int
-	Logger       log.LeveledLogger
+	Logger       log.LeveledStructuredLogger
 }
 
 func (auth *Basic) Middleware(next http.Handler) http.Handler {

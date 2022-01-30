@@ -50,7 +50,6 @@ func (h Handler) CreateUserGetFrom() func(w http.ResponseWriter, r *http.Request
 		data.Path = r.RequestURI
 		data.Redirect = path.Clean(r.RequestURI + "/..")
 		_ = tmpl.Execute(w, data)
-		return
 	}
 }
 
@@ -84,7 +83,6 @@ func (h Handler) CreateUserPostForm() func(w http.ResponseWriter, r *http.Reques
 		// todo send path from get request
 		http.Redirect(w, r, payload.Redirect, http.StatusSeeOther)
 
-		return
 		// todo handle errors
 		// todo handle user already exists ?
 		// todo add nonce with server storage ?

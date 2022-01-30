@@ -81,30 +81,72 @@ func TestMemStore(t *testing.T) {
 		}
 	})
 
-	t.Run("testMemPerformance", func(t *testing.T) {
-		timeStart := time.Now()
-		s.expiration = 1 * time.Millisecond
+}
 
-		c := 0
-		lookups := 0
-		for i := 1; i <= 3000; i++ {
+func BenchmarkMemoryStore(b *testing.B) {
+
+	insert := func(n int, b *testing.B) {
+		s := memStore{
+			//expiration: 5 * time.Millisecond,
+			db: make(map[string]time.Time),
+		}
+		for i := 0; i < b.N; i++ {
+			val := 0
 			check := ""
-			for j := 1; j <= 2000; j++ {
-				check = strconv.Itoa(c)
+			for j := 1; j <= n; j++ {
+				check = strconv.Itoa(val)
 				s.Save(check)
-				c++
+				val++
 			}
-			//n := check + "- "+strconv.Itoa(len(s.db))
-			//spew.Dump(n)
-			lookups++
-			s.Valid(check)
+		}
+	}
+
+	b.Run("insert", func(b *testing.B) {
+		b.Run("1000", func(b *testing.B) {
+
+			insert(1000, b)
+		})
+		b.Run("10K", func(b *testing.B) {
+			insert(10*1000, b)
+		})
+		b.Run("100k", func(b *testing.B) {
+			insert(100*1000, b)
+		})
+		b.Run("500k", func(b *testing.B) {
+			insert(500*1000, b)
+		})
+	})
+
+	insertRead := func(n int, b *testing.B) {
+		s := memStore{
+			db: make(map[string]time.Time),
 		}
 
-		timeEnd := time.Now()
-		timeDiff := timeEnd.Sub(timeStart)
-		t.Log("insertions", c, "lookups", lookups, "duration", timeDiff.String())
+		for i := 0; i < b.N; i++ {
+			val := 0
+			check := ""
+			for j := 1; j <= n; j++ {
+				check = strconv.Itoa(val)
+				s.Save(check)
+				s.Valid(check)
+				val++
+			}
+		}
+	}
 
-		//fmt.Println(timeDiff.String())
+	b.Run("insertAndRead", func(b *testing.B) {
+		b.Run("1000", func(b *testing.B) {
+			insertRead(1000, b)
+		})
+		b.Run("10K", func(b *testing.B) {
+			insertRead(10*1000, b)
+		})
+		b.Run("100k", func(b *testing.B) {
+			insertRead(100*1000, b)
+		})
+		b.Run("500k", func(b *testing.B) {
+			insertRead(500*1000, b)
+		})
 	})
 
 }
