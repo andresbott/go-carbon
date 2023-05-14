@@ -1,7 +1,7 @@
 package main
 
-import "git.andresbott.com/Golang/carbon/cmd"
+import "git.andresbott.com/Golang/carbon/app"
 
 func main() {
-	cmd.Execute()
+	app.Execute()
 }

@@ -1,4 +1,4 @@
-package cmd
+package app
 
 import (
 	"git.andresbott.com/Golang/carbon/internal/server"
