@@ -1,13 +1,9 @@
 package app
 
 import (
-	"git.andresbott.com/Golang/carbon/internal/server"
+	"git.andresbott.com/Golang/carbon/app/server"
 	"git.andresbott.com/Golang/carbon/libs/log/zero"
-	"git.andresbott.com/Golang/carbon/libs/log/zeroGorm"
 	"github.com/spf13/cobra"
-
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 const dbFile = "carbon.db"
@@ -25,16 +21,16 @@ func serverCmd() *cobra.Command {
 
 			l := zero.NewZero(zero.InfoLevel, nil)
 
-			db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
-				Logger: zeroGorm.New(l.ZeroLog, zeroGorm.Cfg{IgnoreRecordNotFoundError: true}),
-			})
-			if err != nil {
-				return err
-			}
+			//db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
+			//	Logger: zeroGorm.New(l.ZeroLog, zeroGorm.Cfg{IgnoreRecordNotFoundError: true}),
+			//})
+			//if err != nil {
+			//	return err
+			//}
 
 			s := server.NewServer(server.Cfg{
 				Logger: l,
-				Db:     db,
+				//Db:     db,
 			})
 			return s.Start()
 		},

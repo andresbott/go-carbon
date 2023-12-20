@@ -21,7 +21,7 @@ verify: fmt test benchmark lint ## run all verification and code structure tiers
 benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
 
-serve: ## run go tests
+serve: ## run go server
 	@go run main.go server
 
 help: ## help command

@@ -1,0 +1,5 @@
+
+
+* create a context that ins responsible of injecting the dirctory list
+* when a component reads a path, if the path is not there, then fetch it
+* add a stop/ cleanup method to prevent continuing if the component cancels
