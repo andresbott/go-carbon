@@ -1,4 +1,4 @@
-package app
+package cmd
 
 import (
 	"fmt"
@@ -27,7 +27,9 @@ func newRootCommand() *cobra.Command {
 		return nil
 	})
 
-	cmd.AddCommand()
+	cmd.AddCommand(
+		serverCmd(),
+	)
 
 	return cmd
 }
