@@ -3,7 +3,6 @@ package cmd
 import (
 	"git.andresbott.com/Golang/carbon/app/server"
 	"git.andresbott.com/Golang/carbon/libs/log/zero"
-
 	"github.com/spf13/cobra"
 
 	"gorm.io/driver/sqlite"
@@ -37,6 +36,7 @@ func serverCmd() *cobra.Command {
 				Db:     db,
 			})
 			return s.Start()
+
 		},
 	}
 

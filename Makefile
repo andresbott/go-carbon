@@ -22,7 +22,7 @@ benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
 
 serve: ## run go tests
-	@go run main.go server
+	@go run main.go start
 
 help: ## help command
 	@egrep '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST)  | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

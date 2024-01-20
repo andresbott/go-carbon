@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
+	"git.andresbott.com/Golang/carbon/libs/prometheus"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -25,6 +26,13 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) *MyAppHandler {
 	//r.Use(func(handler http.Handler) http.Handler {
 	//	return log.LoggingMiddleware(handler, l)
 	//})
+
+	promMiddle := prometheus.NewMiddleware(prometheus.Cfg{
+		MetricPrefix: "myApp",
+	})
+	r.Use(func(handler http.Handler) http.Handler {
+		return promMiddle.Handler(handler)
+	})
 
 	// root page
 	// --------------------------
