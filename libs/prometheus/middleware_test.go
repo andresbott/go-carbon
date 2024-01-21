@@ -85,6 +85,9 @@ func TestMiddleware(t *testing.T) {
 			reg := prometheus.NewRegistry()
 			cfg := tc.cfg
 			cfg.Registry = reg
+			if cfg.MetricPrefix == "" {
+				cfg.MetricPrefix = strings.ReplaceAll(tc.name, " ", "_")
+			}
 
 			mid := prommidleware.NewMiddleware(cfg)
 

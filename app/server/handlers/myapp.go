@@ -51,6 +51,7 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) *MyAppHandler {
 		},
 	}
 
+	basiAuthProtectPage(r)
 	r.Path("/").Handler(&rootPage)
 
 	return &MyAppHandler{
