@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
+	"git.andresbott.com/Golang/carbon/libs/log/zero"
 	"git.andresbott.com/Golang/carbon/libs/prometheus"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
@@ -22,10 +23,10 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) *MyAppHandler {
 
 	r := mux.NewRouter()
 
-	//// add logging middleware
-	//r.Use(func(handler http.Handler) http.Handler {
-	//	return log.LoggingMiddleware(handler, l)
-	//})
+	// add logging middleware
+	r.Use(func(handler http.Handler) http.Handler {
+		return zero.LoggingMiddleware(handler, l)
+	})
 
 	promMiddle := prometheus.NewMiddleware(prometheus.Cfg{
 		MetricPrefix: "myApp",

@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-type Middleware struct {
-	histogram      *prometheus.HistogramVec
-	groupRespCodes bool
-}
-
 type Cfg struct {
 	MetricPrefix   string
 	Buckets        []float64
@@ -58,6 +53,11 @@ func NewMiddleware(cfg Cfg) *Middleware {
 		m.histogram,
 	)
 	return m
+}
+
+type Middleware struct {
+	histogram      *prometheus.HistogramVec
+	groupRespCodes bool
 }
 
 func (m *Middleware) Handler(next http.Handler) http.Handler {
