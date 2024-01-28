@@ -44,9 +44,9 @@ func NewServer(cfg Cfg) *Server {
 		cfg.Logger = zero.Silent()
 	}
 
-	handler := handlers.NewAppHandler(cfg.Logger, cfg.Db)
-	if handler == nil {
-		panic("nil")
+	handler, err := handlers.NewAppHandler(cfg.Logger, cfg.Db)
+	if err != nil {
+		panic(fmt.Sprintf("unable to initialize app: %v", err))
 	}
 
 	return &Server{

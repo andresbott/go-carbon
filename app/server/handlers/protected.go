@@ -1,12 +1,11 @@
 package handlers
 
 import (
-	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
-	"github.com/gorilla/mux"
+	"net/http"
 )
 
-func basiAuthProtectPage(r *mux.Router) {
+func fixedBasicAuthHandler() http.Handler {
 
 	page := handlers.SimpleText{
 		Text: "Page protected by basic auth",
@@ -17,15 +16,20 @@ func basiAuthProtectPage(r *mux.Router) {
 			},
 		},
 	}
+	return &page
+}
 
-	users := auth.FixedUsers{
-		Users: map[string]string{
-			"demo": "demo",
+func dbBasicAuthHandler() http.Handler {
+
+	page := handlers.SimpleText{
+		Text: "Page protected by basic auth with users in a DB",
+		Links: []handlers.Link{
+			{
+				Text: "back to root",
+				Url:  "../",
+			},
 		},
 	}
-	authProtected := auth.Basic{
-		User: users,
-	}
 
-	r.Path("/basic").Handler(authProtected.Middleware(&page))
+	return &page
 }
