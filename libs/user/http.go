@@ -114,18 +114,22 @@ func (h DbHandler) CreateUserHandleForm() func(w http.ResponseWriter, r *http.Re
 func (h DbHandler) UserHandler(base string) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	mux.Handle(path.Join(base, "/register"), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		spew.Dump("here")
+		if r.Method == http.MethodGet {
+			h.CreateUserForm()(w, r)
+		} else if r.Method == http.MethodPost {
+			h.CreateUserHandleForm()(w, r)
+		} else {
+			// todo unsuported request
+		}
+	}))
+
 	rootHandler := handlers.SimpleText{
 		Text: "user root",
 		Links: []handlers.Link{
-			{
-				Text: "back",
-				Url:  path.Join(base, "../"),
-			},
-
-			{
-				Text: "Register",
-				Url:  path.Join(base, "/register"),
-			},
+			{Text: "back", Url: path.Join(base, "../")},
+			{Text: "Register", Url: path.Join(base, "/register")},
 		},
 	}
 	mux.Handle("/", &rootHandler)

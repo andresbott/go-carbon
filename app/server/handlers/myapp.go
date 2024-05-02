@@ -77,7 +77,7 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Path("/user").Handler(userDbHandler.UserHandler("/user"))
+	r.PathPrefix("/user").Handler(userDbHandler.UserHandler("/user"))
 
 	// root page
 	// --------------------------
