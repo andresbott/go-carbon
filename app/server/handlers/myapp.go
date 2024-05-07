@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/log/zero"
@@ -43,21 +44,22 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 		return promMiddle.Handler(handler)
 	})
 
-	// Basic auth protected path
-	// --------------------------
-	users := auth.FixedUsers{
+	demoUsers := user.StaticUsers{
 		Users: map[string]string{
 			"demo": "demo",
 		},
 	}
+
+	// Basic auth protected path
+	// --------------------------
 	fixedAuth := auth.Basic{
-		User: users,
+		User: demoUsers,
 	}
 	fixedProtectedPath := fixedAuth.Middleware(fixedBasicAuthHandler())
 
 	r.Path("/basic").Handler(fixedProtectedPath)
 
-	// Basic auth protected path but with users managed by an in-memory DB
+	// Basic auth protected path but with demoUsers managed by an in-memory DB
 	// --------------------------
 
 	sampleDbUser, err := sampleUserManager()
@@ -71,9 +73,30 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 
 	r.Path("/basic-auth-db").Handler(dbProtectedPath)
 
+	// Cookie based login and protected content
+	// --------------------------
+	cookieAuth, err := auth.NewCookieAuth(
+		auth.CookieCfg{
+			User:         demoUsers,
+			Redirect:     "/cookie-login",
+			RedirectCode: http.StatusTemporaryRedirect,
+			CookieName:   "",
+			HashKey:      []byte("banana"),
+			BlockKey:     []byte("thahsh0fee4Zae3taizieN9goquie4ze"),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	cookieProtected := cookieAuth.Middleware(cookieProtectedContent())
+	r.Path("/cookie").Handler(cookieProtected)
+
+	r.PathPrefix("/cookie-login").Methods(http.MethodPost).Handler(cookieAuth.FormAuthHandler())
+	r.PathPrefix("/cookie-login").HandlerFunc(LoginForm())
+
 	// user management
 	// --------------------------
-	userDbHandler, err := user.NewHandler(sampleDbUser)
+	userDbHandler, err := userhandler.NewHandler(sampleDbUser)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +112,16 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 				Url:  "/basic",
 			},
 			{
-				Text: "Basic auth protected using DB users (test@mail.com:1234)",
+				Text: "Basic auth protected using DB demoUsers (test@mail.com:1234)",
 				Url:  "/basic-auth-db",
+			},
+			{
+				Text: "cookie based protected page",
+				Url:  "/cookie",
+			},
+			{
+				Text: "cookie based login (demo:demo)",
+				Url:  "/cookie-login",
 			},
 			{
 				Text: "User handling",

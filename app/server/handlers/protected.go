@@ -33,3 +33,16 @@ func dbBasicAuthHandler() http.Handler {
 
 	return &page
 }
+func cookieProtectedContent() http.Handler {
+
+	page := handlers.SimpleText{
+		Text: "Page protected by cookie auth",
+		Links: []handlers.Link{
+			{
+				Text: "back to root",
+				Url:  "../",
+			},
+		},
+	}
+	return &page
+}

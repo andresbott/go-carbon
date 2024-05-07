@@ -54,20 +54,3 @@ func (auth *Basic) Middleware(next http.Handler) http.Handler {
 type UserLogin interface {
 	AllowLogin(user string, password string) bool
 }
-
-type FixedUsers struct {
-	Users map[string]string
-}
-
-func (fu FixedUsers) AllowLogin(user string, hash string) bool {
-	for u, p := range fu.Users {
-		if user == u {
-			if p == hash {
-				return true
-			} else {
-				return false
-			}
-		}
-	}
-	return false
-}

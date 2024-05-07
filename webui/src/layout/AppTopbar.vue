@@ -3,7 +3,7 @@ import Horizontal from "@/components/legos/horizontal.vue";
 </script>
 
 <template>
-  <horizontal>
+  <horizontal :center-content="true">
     <template v-slot:left>
       <router-link to="/" class="layout-topbar-logo">
         <span>SAKAI</span>

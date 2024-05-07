@@ -4,14 +4,16 @@ import AppTopbar from "@/layout/AppTopbar.vue";
 </script>
 
 <template>
-  <vertical>
+  <vertical :center-content="false">
 
     <template v-slot:header>
       <AppTopbar />
     </template>
 
-    <template v-slot:default>
-      Main
+    <template v-slot:main >
+      <div>
+        Main banana
+      </div>
     </template>
 
     <template v-slot:footer>

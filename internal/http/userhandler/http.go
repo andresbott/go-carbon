@@ -1,8 +1,9 @@
-package user
+package userhandler
 
 import (
 	_ "embed"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
+	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/schema"
 	"gorm.io/gorm"
@@ -16,12 +17,12 @@ import (
 // todo add factory to make sure the logger is not nil
 // todo rename to something that makes more sense
 type DbHandler struct {
-	mng *DbManager
+	mng *user.DbManager
 }
 
-func NewDbHandler(db *gorm.DB, opts ManagerOpts) (*DbHandler, error) {
+func NewDbHandler(db *gorm.DB, opts user.ManagerOpts) (*DbHandler, error) {
 
-	dbh, err := NewDbManager(db, opts)
+	dbh, err := user.NewDbManager(db, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func NewDbHandler(db *gorm.DB, opts ManagerOpts) (*DbHandler, error) {
 	return &hndlr, nil
 }
 
-func NewHandler(db *DbManager) (*DbHandler, error) {
+func NewHandler(db *user.DbManager) (*DbHandler, error) {
 	hndlr := DbHandler{
 		mng: db,
 	}

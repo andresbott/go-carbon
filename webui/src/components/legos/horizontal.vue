@@ -4,7 +4,7 @@
       <slot name="left"></slot>
     </div>
 
-    <div class="c-main">
+    <div :class="['c-main', { 'h-center': centerContent }]">
       <slot></slot>
     </div>
 
@@ -15,25 +15,23 @@
   </div>
 </template>
 
+<script setup>
+defineProps({
+  centerContent:  {
+    type: Boolean,
+    default: false
+  }})
+</script>
+
 <style>
 .c-horizontal {
   display: grid;
-  grid-template-areas: "left" "center" "right";
-
   grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto;
-
   width:100%;
 }
-
-.c-vertical .c-left {
-  grid-area: left;
-}
-.c-vertical .c-main {
-  grid-area: center;
-}
-.c-vertical .c-right {
-  grid-area: right;
+.c-horizontal>.c-main.h-center {
+  display: grid;
+  place-items: normal center;
 }
 
 </style>
