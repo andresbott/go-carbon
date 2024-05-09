@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
+	github.com/pquerna/otp v1.4.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rs/zerolog v1.26.0
 	github.com/spf13/cobra v1.2.1
@@ -21,6 +22,7 @@ require (
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
