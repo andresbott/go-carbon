@@ -12,16 +12,16 @@
     <h2>
         Login
     </h2>
-    <form action="{{ .Path }}"  method="POST">
+    <form action="{{ $.Path }}"  method="POST">
         <input type="text" name="name" placeholder="User" required/>
         <br/>
         <input type="password" name="pw" placeholder="Password" required/>
         <br/>
         <button type="submit" >Submit</button>
-        <input type="hidden" name="redirect" value="{{ .Redirect }}">
+        <input type="hidden" name="redirect" value="{{ $.Redirect }}">
     </form>
     <hr>
     <h4>data:</h4>
-    request path: {{ .Path }}
+    request path: {{ $.Path }}
 </body>
 </html>

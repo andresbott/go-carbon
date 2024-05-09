@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	_ "embed"
 	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
@@ -16,6 +17,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"time"
 )
 
@@ -26,6 +28,11 @@ type MyAppHandler struct {
 func (h *MyAppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
+
+//go:embed tmpl/loginForm.html
+var loginForm string
+
+// TODO split the App handler in busines functions
 
 // NewAppHandler generates the main url router handler to be used in the server
 func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
@@ -55,7 +62,13 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	fixedAuth := auth.Basic{
 		User: demoUsers,
 	}
-	fixedProtectedPath := fixedAuth.Middleware(fixedBasicAuthHandler())
+	fixedAuthPageHandlr := handlers.SimpleText{
+		Text: "Page protected by basic auth",
+		Links: []handlers.Link{
+			{Text: "back to root", Url: "../"},
+		},
+	}
+	fixedProtectedPath := fixedAuth.Middleware(&fixedAuthPageHandlr)
 
 	r.Path("/basic").Handler(fixedProtectedPath)
 
@@ -69,7 +82,13 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	authProtected := auth.Basic{
 		User: sampleDbUser,
 	}
-	dbProtectedPath := authProtected.Middleware(dbBasicAuthHandler())
+	basicAuthPageHandlr := handlers.SimpleText{
+		Text: "Page protected by basic auth with users in a DB",
+		Links: []handlers.Link{
+			{Text: "back to root", Url: "../"},
+		},
+	}
+	dbProtectedPath := authProtected.Middleware(&basicAuthPageHandlr)
 
 	r.Path("/basic-auth-db").Handler(dbProtectedPath)
 
@@ -88,11 +107,26 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	if err != nil {
 		return nil, err
 	}
-	cookieProtected := cookieAuth.Middleware(cookieProtectedContent())
-	r.Path("/cookie").Handler(cookieProtected)
 
+	cookieProtectedPageHandler := handlers.SimpleText{
+		Text: "Page protected by cookie auth",
+		Links: []handlers.Link{
+			{Text: "back to root", Url: "../"},
+		},
+	}
+	cookieProtected := cookieAuth.Middleware(&cookieProtectedPageHandler)
+	r.Path("/cookie").Handler(cookieProtected)
+	// handle the post request
 	r.PathPrefix("/cookie-login").Methods(http.MethodPost).Handler(cookieAuth.FormAuthHandler())
-	r.PathPrefix("/cookie-login").HandlerFunc(LoginForm())
+
+	// render the form
+	loginFormHandlr := handlers.TmplWithReq(loginForm, func(r *http.Request) map[string]interface{} {
+		payload := map[string]interface{}{}
+		payload["Path"] = r.RequestURI
+		payload["Redirect"] = path.Clean(r.RequestURI + "/..")
+		return payload
+	})
+	r.PathPrefix("/cookie-login").HandlerFunc(loginFormHandlr)
 
 	// user management
 	// --------------------------
