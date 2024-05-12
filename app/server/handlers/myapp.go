@@ -3,7 +3,6 @@ package handlers
 import (
 	_ "embed"
 	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
-	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/log/zero"
 	"git.andresbott.com/Golang/carbon/libs/prometheus"
@@ -17,7 +16,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"time"
 )
 
@@ -31,8 +29,6 @@ func (h *MyAppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 //go:embed tmpl/loginForm.html
 var loginForm string
-
-// TODO split the App handler in busines functions
 
 // NewAppHandler generates the main url router handler to be used in the server
 func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
@@ -51,82 +47,28 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 		return promMiddle.Handler(handler)
 	})
 
+	// static demos users
 	demoUsers := user.StaticUsers{
 		Users: map[string]string{
 			"demo": "demo",
 		},
 	}
+	// add basic auth with fixed users
+	basicAuth(r, demoUsers)
 
-	// Basic auth protected path
-	// --------------------------
-	fixedAuth := auth.Basic{
-		User: demoUsers,
+	// use session auth
+	err := sessionAuthentication(r, demoUsers)
+	if err != nil {
+		return nil, err
 	}
-	fixedAuthPageHandlr := handlers.SimpleText{
-		Text: "Page protected by basic auth",
-		Links: []handlers.Link{
-			{Text: "back to root", Url: "../"},
-		},
-	}
-	fixedProtectedPath := fixedAuth.Middleware(&fixedAuthPageHandlr)
 
-	r.Path("/basic").Handler(fixedProtectedPath)
-
-	// Basic auth protected path but with demoUsers managed by an in-memory DB
-	// --------------------------
-
+	// db managed users
 	sampleDbUser, err := sampleUserManager()
 	if err != nil {
 		return nil, err
 	}
-	authProtected := auth.Basic{
-		User: sampleDbUser,
-	}
-	basicAuthPageHandlr := handlers.SimpleText{
-		Text: "Page protected by basic auth with users in a DB",
-		Links: []handlers.Link{
-			{Text: "back to root", Url: "../"},
-		},
-	}
-	dbProtectedPath := authProtected.Middleware(&basicAuthPageHandlr)
-
-	r.Path("/basic-auth-db").Handler(dbProtectedPath)
-
-	// Cookie based login and protected content
-	// --------------------------
-	cookieAuth, err := auth.NewCookieAuth(
-		auth.CookieCfg{
-			User:         demoUsers,
-			Redirect:     "/cookie-login",
-			RedirectCode: http.StatusTemporaryRedirect,
-			CookieName:   "",
-			HashKey:      []byte("banana"),
-			BlockKey:     []byte("thahsh0fee4Zae3taizieN9goquie4ze"),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	cookieProtectedPageHandler := handlers.SimpleText{
-		Text: "Page protected by cookie auth",
-		Links: []handlers.Link{
-			{Text: "back to root", Url: "../"},
-		},
-	}
-	cookieProtected := cookieAuth.Middleware(&cookieProtectedPageHandler)
-	r.Path("/cookie").Handler(cookieProtected)
-	// handle the post request
-	r.PathPrefix("/cookie-login").Methods(http.MethodPost).Handler(cookieAuth.FormAuthHandler())
-
-	// render the form
-	loginFormHandlr := handlers.TmplWithReq(loginForm, func(r *http.Request) map[string]interface{} {
-		payload := map[string]interface{}{}
-		payload["Path"] = r.RequestURI
-		payload["Redirect"] = path.Clean(r.RequestURI + "/..")
-		return payload
-	})
-	r.PathPrefix("/cookie-login").HandlerFunc(loginFormHandlr)
+	// add basic auth with users from a in-memory DB
+	basicAuthDb(r, sampleDbUser)
 
 	// user management
 	// --------------------------
@@ -150,12 +92,12 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 				Url:  "/basic-auth-db",
 			},
 			{
-				Text: "cookie based protected page",
-				Url:  "/cookie",
+				Text: "session based protected page",
+				Url:  sessionContent,
 			},
 			{
-				Text: "cookie based login (demo:demo)",
-				Url:  "/cookie-login",
+				Text: "session based login (demo:demo)",
+				Url:  sessionLogin,
 			},
 			{
 				Text: "User handling",

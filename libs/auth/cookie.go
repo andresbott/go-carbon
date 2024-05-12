@@ -51,36 +51,40 @@ func NewCookieAuth(cfg CookieCfg) (*Cookie, error) {
 	if cfg.Expire == 0 {
 		cfg.Expire = 6 * time.Hour
 	}
-	// TODO probably it would be good to add some validation for the crypto keys etc
+	// TODO probably it would be good to add some validation for the crypto keys are correctly formatted etc
 	c := Cookie{
 		user:         cfg.User,
 		cookieName:   cfg.CookieName,
 		redirect:     cfg.Redirect,
 		redirectCode: cfg.RedirectCode,
 		logger:       cfg.logger,
+		expire:       cfg.Expire,
 		secCookie:    securecookie.New(cfg.HashKey, cfg.BlockKey),
 	}
 	return &c, nil
 }
 
-type AuthCookieData struct {
+type CookieData struct {
 	UserId string // ID or username
 	IsAuth bool
 }
 
-// WriteAuthCookie writes the auth cookie into an http response
-// TODO add expiration
-func (auth *Cookie) WriteAuthCookie(data AuthCookieData, w http.ResponseWriter) error {
+// WriteAuthCookie writes the auth cookie into a http response
+func (auth *Cookie) WriteAuthCookie(data CookieData, w http.ResponseWriter) error {
 
 	encoded, err := auth.secCookie.Encode(auth.cookieName, data)
 	if err != nil {
 		return fmt.Errorf("unable to encode cokkie: %s", err.Error())
 	}
 
+	expire := time.Now().Add(auth.expire)
+	spew.Dump(auth.expire)
+
 	cookie := &http.Cookie{
 		Name:     auth.cookieName,
 		Value:    encoded,
 		Path:     "/",
+		Expires:  expire,
 		Secure:   true,
 		HttpOnly: true,
 	}
@@ -99,11 +103,14 @@ type LoginFormData struct {
 // meta-data about structs, and an instance can be shared safely.
 var formDecoder = schema.NewDecoder()
 
+// FormAuthHandler is a http handler that responds to login requests made from a Form
+// it will check if the provided data is correct and write the login cookie into the response.
+// todo better err handling
 func (auth *Cookie) FormAuthHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			// todo better err handling
+
 			spew.Dump(err)
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
@@ -123,7 +130,7 @@ func (auth *Cookie) FormAuthHandler() http.Handler {
 		if auth.user.AllowLogin(payload.Name, payload.Pw) {
 			auth.logger(ActionLoginOk, payload.Name)
 
-			authData := AuthCookieData{
+			authData := CookieData{
 				UserId: payload.Name,
 				IsAuth: true,
 			}
@@ -133,9 +140,6 @@ func (auth *Cookie) FormAuthHandler() http.Handler {
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-
-			spew.Dump(authData)
-
 		} else {
 			auth.logger(ActionLoginFailed, payload.Name)
 			http.Error(w, "401 unauthorized", http.StatusUnauthorized)
@@ -148,9 +152,9 @@ func (auth *Cookie) FormAuthHandler() http.Handler {
 	})
 }
 
-// IsLoggedIn will verify if user is logged in based on the secure cookie data
-func (auth *Cookie) IsLoggedIn(r *http.Request) (AuthCookieData, error) {
-	value := AuthCookieData{}
+// Read will verify if user is logged in based on the secure cookie data
+func (auth *Cookie) Read(r *http.Request) (CookieData, error) {
+	value := CookieData{}
 	if cookie, err := r.Cookie(auth.cookieName); err == nil {
 		if err = auth.secCookie.Decode(auth.cookieName, cookie.Value, &value); err != nil {
 			return value, err
@@ -167,7 +171,7 @@ func (auth *Cookie) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// check cookie
-		data, err := auth.IsLoggedIn(r)
+		data, err := auth.Read(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

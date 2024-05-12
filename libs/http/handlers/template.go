@@ -13,7 +13,7 @@ import (
 
 const tmpName = "banana"
 
-func TmplWithReq(inTmpl string, data func(r *http.Request) map[string]interface{}) func(w http.ResponseWriter, r *http.Request) {
+func TemplateWithRequest(inTmpl string, data func(r *http.Request) map[string]interface{}) func(w http.ResponseWriter, r *http.Request) {
 	tmpl, _ := template.New(tmpName).Parse(inTmpl)
 	return func(w http.ResponseWriter, r *http.Request) {
 		payload := map[string]interface{}{}

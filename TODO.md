@@ -7,8 +7,9 @@
 * improve config
   * use a config file with env overrides (?)
 * login
-  * cookie based
-  * add logout
+  * add logout to cookie auth by unseting the cookie
+* session login store
+  * 
 * add session store
 * totp
 * template handler
