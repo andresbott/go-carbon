@@ -6,11 +6,10 @@
 
 * improve config
   * use a config file with env overrides (?)
-* login
-  * add logout to cookie auth by unseting the cookie
 * session login store
-  * 
-* add session store
+  * check suspicius logins, based on location / device ?
+  * MFA
+  * logout
 * totp
 * template handler
   * replace user creation 
