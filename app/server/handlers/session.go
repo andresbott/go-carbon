@@ -22,7 +22,7 @@ func sessionAuthentication(r *mux.Router, demoUsers user.StaticUsers) error {
 		return err
 	}
 
-	sessionAuth, err := auth.NewSessionAuth(auth.SessionCfg{
+	sessionAuth, err := auth.NewSessionMgr(auth.SessionCfg{
 		User:  demoUsers,
 		Store: cookieStore,
 	})

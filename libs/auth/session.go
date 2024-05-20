@@ -3,38 +3,34 @@ package auth
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
 	"net/http"
 	"time"
 )
 
 type SessionMgr struct {
-	user  UserLogin
 	store sessions.Store
 
 	sessionDur    time.Duration
+	minWriteSpace time.Duration
 	maxSessionDur time.Duration
 
 	logger func(action int, user string)
 }
 
 type SessionCfg struct {
-	User  UserLogin
 	Store sessions.Store
 
 	SessionDur    time.Duration // normal session duration, can be renewed on subsequent requests
-	MinWriteSpace time.Duration // time between the last session update
+	MinWriteSpace time.Duration // time between the last session update, used to not overload the session store
 	MaxSessionDur time.Duration // force a logout after this time
 
 	logger func(action int, user string)
 }
 
-func NewSessionAuth(cfg SessionCfg) (*SessionMgr, error) {
+func NewSessionMgr(cfg SessionCfg) (*SessionMgr, error) {
 	gob.Register(SessionData{})
-	if cfg.User == nil {
-		return nil, fmt.Errorf("user login cannot be empty")
-	}
 
 	if cfg.logger == nil {
 		cfg.logger = func(action int, user string) {}
@@ -45,10 +41,13 @@ func NewSessionAuth(cfg SessionCfg) (*SessionMgr, error) {
 	if cfg.MaxSessionDur == 0 {
 		cfg.MaxSessionDur = time.Hour * 24
 	}
+	if cfg.MinWriteSpace == 0 {
+		cfg.MinWriteSpace = time.Minute * 2
+	}
 
 	c := SessionMgr{
-		user:          cfg.User,
 		sessionDur:    cfg.SessionDur,
+		minWriteSpace: cfg.MinWriteSpace,
 		maxSessionDur: cfg.MaxSessionDur,
 		store:         cfg.Store,
 		logger:        cfg.logger,
@@ -81,24 +80,28 @@ func CookieStore(HashKey, BlockKey []byte) (*sessions.CookieStore, error) {
 
 type SessionData struct {
 	UserId   string // ID or username
-	IsAuth   bool
 	DeviceID string // hold information about the device
+
+	IsAuthenticated bool
+
 	// expiration of the session, e.g. 2 days, after a login is required, this value can be updated by "keep me logged in"
-	Expiration  time.Time
-	ForceReAuth time.Time // force re-auth, max time a session is valid, even if keep logged in is in place.
+	Expiration time.Time
+	// force re-auth, max time a session is valid, even if keep logged in is in place.
+	ForceReAuth time.Time
+	LastUpdate  time.Time
 }
 
 func (d *SessionData) process(extend time.Duration) {
 	// check expiration
 	if d.Expiration.Before(time.Now()) {
-		d.IsAuth = false
+		d.IsAuthenticated = false
 	}
 	// check hard expiration
 	if d.ForceReAuth.Before(time.Now()) {
-		d.IsAuth = false
+		d.IsAuthenticated = false
 	}
 	// extend normal expiration
-	if d.IsAuth && extend > 0 {
+	if d.IsAuthenticated && extend > 0 {
 		d.Expiration = d.Expiration.Add(extend)
 	}
 }
@@ -108,115 +111,127 @@ const (
 	sessionDataKey = "data"
 )
 
-func (auth *SessionMgr) WriteSession(r *http.Request, w http.ResponseWriter, data SessionData) error {
-	session, err := auth.store.Get(r, SessionName)
-	if err != nil {
-		return err
+func (auth *SessionMgr) write(r *http.Request, w http.ResponseWriter, session *sessions.Session, data SessionData) error {
+	now := time.Now()
+	if data.LastUpdate.Add(auth.minWriteSpace).After(now) {
+		return nil
 	}
+	data.LastUpdate = now
+
 	session.Values[sessionDataKey] = data
-	err = session.Save(r, w)
+	err := session.Save(r, w)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (auth *SessionMgr) Read(r *http.Request) (SessionData, error) {
+
+func (auth *SessionMgr) Write(r *http.Request, w http.ResponseWriter, data SessionData) error {
 	session, err := auth.store.Get(r, SessionName)
 	if err != nil {
-		return SessionData{}, err
+		return err
+	}
+	return auth.write(r, w, session, data)
+}
+
+// Login is a convenience function to write a new logged-in session for a specific user id and write it
+func (auth *SessionMgr) Login(r *http.Request, w http.ResponseWriter, user string) error {
+	authData := SessionData{
+		UserId:          user,
+		IsAuthenticated: true,
+		Expiration:      time.Now().Add(auth.sessionDur),
+		ForceReAuth:     time.Now().Add(auth.maxSessionDur),
+	}
+	return auth.Write(r, w, authData)
+}
+
+func (auth *SessionMgr) read(r *http.Request) (SessionData, *sessions.Session, error) {
+	session, err := auth.store.Get(r, SessionName)
+	if err != nil {
+		return SessionData{}, nil, err
 	}
 	key := session.Values[sessionDataKey]
 	if key == nil {
-		return SessionData{}, nil
+		return SessionData{}, nil, err
 	}
 	authData := key.(SessionData)
 	authData.process(auth.sessionDur)
 
-	return authData, nil
+	return authData, session, err
+}
+func (auth *SessionMgr) Read(r *http.Request) (SessionData, error) {
+	data, _, err := auth.read(r)
+	return data, err
 }
 
-// FormAuthHandler is a http handler that responds to login requests made from a Form
-// it will check if the provided data is correct and write the login cookie into the response.
-// todo better err handling
-func (auth *SessionMgr) FormAuthHandler() http.Handler {
+// ReadUpdate is used to read the session, and update the session expiry timestamp
+// it returns the session data if the user is logged in
+func (auth *SessionMgr) ReadUpdate(r *http.Request, w http.ResponseWriter) (SessionData, error) {
+	data, session, err := auth.read(r)
+	if err != nil {
+		return data, err
+	}
+
+	if data.IsAuthenticated {
+		err = auth.write(r, w, session, data)
+		if err != nil {
+			return data, err
+		}
+	}
+	return data, nil
+}
+
+// Set a Decoder instance as a package global, because it caches
+// meta-data about structs, and an instance can be shared safely.
+var formDecoder = schema.NewDecoder()
+
+// FormAuthHandler is a simple session auth handler that will respond to a form POST request and login a user
+// this can be used as simple implementations or as inspiration to customize an authentication middleware
+func FormAuthHandler(session *SessionMgr, user UserLogin) http.Handler {
+	type LoginFormData struct {
+		Name     string
+		Pw       string
+		Redirect string
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			spew.Dump(err)
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 		var payload LoginFormData
-
 		// r.PostForm is a map of our POST form values
 		err = formDecoder.Decode(&payload, r.PostForm)
 		if err != nil {
-			spew.Dump(err)
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		auth.logger(ActionLoginCheck, payload.Name)
-
-		if auth.user.AllowLogin(payload.Name, payload.Pw) {
-			auth.logger(ActionLoginOk, payload.Name)
-
-			authData := SessionData{
-				UserId:      payload.Name,
-				IsAuth:      true,
-				Expiration:  time.Now().Add(auth.sessionDur),
-				ForceReAuth: time.Now().Add(auth.maxSessionDur),
-			}
-			err = auth.WriteSession(r, w, authData)
+		if user.AllowLogin(payload.Name, payload.Pw) {
+			err = session.Login(r, w, payload.Name)
 			if err != nil {
-				spew.Dump(err)
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
 		} else {
-			auth.logger(ActionLoginFailed, payload.Name)
-			http.Error(w, "401 unauthorized", http.StatusUnauthorized)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-
-		// todo send path from get request
-		http.Redirect(w, r, payload.Redirect, http.StatusSeeOther)
-
 	})
 }
 
-func (auth *SessionMgr) Middleware(next http.Handler) http.Handler {
-
+// Middleware is a simple session auth middleware that will only allow access if the user is logged in
+// this can be used as simple implementations or as inspiration to customize an authentication middleware
+func Middleware(session *SessionMgr, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		// read the cookie
-
-		// check data
-		data, err := auth.Read(r)
+		data, err := session.ReadUpdate(r, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-
-		if data.IsAuth {
-			auth.logger(ActionLoginOk, data.UserId)
-
-			// todo only write if time is big enough to not overload session write
-			err = auth.WriteSession(r, w, data)
-			if err != nil {
-				spew.Dump(err)
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
-			}
-
+		if data.IsAuthenticated {
 			next.ServeHTTP(w, r)
 			return
 		}
-
-		//if auth.redirect != "" {
-		//	http.Redirect(w, r, auth.redirect, auth.redirectCode)
-		//	return
-		//}
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	})
 }
-
-// for now to kee a reference
