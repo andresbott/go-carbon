@@ -8,7 +8,7 @@ import (
 // TODO, possible improvements
 // * template does not need to be parsed on every request
 // * add additional template functions, e.g. https://gist.github.com/alex-leonhardt/8ed3f78545706d89d466434fb6870023
-// * if need be extend into own templating library for html content, e.g. convention folders and rendering cycle
+// * if need be extend into own templating library for html data, e.g. convention folders and rendering cycle
 //   probably does not make much sense with an SPA
 
 const tmpName = "banana"

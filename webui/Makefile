@@ -9,6 +9,8 @@ run: ## run the local dev
 fmt: ## format go code and run mod tidy
 	@npm run format
 
+build: ## build a production release
+	@npm run build
 
 
 

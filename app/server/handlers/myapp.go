@@ -2,6 +2,7 @@ package handlers
 
 import (
 	_ "embed"
+	"git.andresbott.com/Golang/carbon/app/spa"
 	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/log/zero"
@@ -80,7 +81,7 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 
 	// root page
 	// --------------------------
-	rootPage := handlers.SimpleText{
+	demoPage := handlers.SimpleText{
 		Text: "root page",
 		Links: []handlers.Link{
 			{
@@ -105,7 +106,17 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 			},
 		},
 	}
-	r.Path("/").Handler(&rootPage)
+	r.Path("/demo").Handler(&demoPage)
+
+	// SPA
+	spaHndlr := spa.SpaHandler{
+		StaticFS:    spa.UiFiles,
+		StaticPath:  spa.UIDir,
+		IndexPath:   "index.html",
+		StripPrefix: "/",
+	}
+
+	r.Methods(http.MethodGet).PathPrefix("/").Handler(spaHndlr)
 
 	return &MyAppHandler{
 		router: r,

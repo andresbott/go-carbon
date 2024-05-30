@@ -15,8 +15,6 @@ type SessionMgr struct {
 	sessionDur    time.Duration
 	minWriteSpace time.Duration
 	maxSessionDur time.Duration
-
-	logger func(action int, user string)
 }
 
 type SessionCfg struct {
@@ -26,15 +24,15 @@ type SessionCfg struct {
 	MinWriteSpace time.Duration // time between the last session update, used to not overload the session store
 	MaxSessionDur time.Duration // force a logout after this time
 
-	logger func(action int, user string)
+}
+
+func init() {
+	// this is needed so that cookiestore can manage the session data
+	gob.Register(SessionData{})
 }
 
 func NewSessionMgr(cfg SessionCfg) (*SessionMgr, error) {
-	gob.Register(SessionData{})
 
-	if cfg.logger == nil {
-		cfg.logger = func(action int, user string) {}
-	}
 	if cfg.SessionDur == 0 {
 		cfg.SessionDur = time.Hour * 1
 	}
@@ -50,7 +48,6 @@ func NewSessionMgr(cfg SessionCfg) (*SessionMgr, error) {
 		minWriteSpace: cfg.MinWriteSpace,
 		maxSessionDur: cfg.MaxSessionDur,
 		store:         cfg.Store,
-		logger:        cfg.logger,
 	}
 	return &c, nil
 }
@@ -77,6 +74,22 @@ func CookieStore(HashKey, BlockKey []byte) (*sessions.CookieStore, error) {
 	}
 	return sessions.NewCookieStore(HashKey, BlockKey), nil
 }
+
+// FsStore is a convenience function to generate a new  File system store
+// is uses a secure cookie to keep the session id (?)
+func FsStore(path string, HashKey, BlockKey []byte) (*sessions.FilesystemStore, error) {
+	hashL := len(HashKey)
+	if hashL != 32 && hashL != 64 {
+		return nil, fmt.Errorf("HashKey lenght should be 32 or 64 bytes")
+	}
+	blockKeyL := len(BlockKey)
+	if blockKeyL != 16 && blockKeyL != 24 && blockKeyL != 32 {
+		return nil, fmt.Errorf("blockKey lenght should be 16, 24 or 32 bytes")
+	}
+	return sessions.NewFilesystemStore(path, HashKey, BlockKey), nil
+}
+
+// FS store can be created with: sessions.NewFilesystemStore("")
 
 type SessionData struct {
 	UserId   string // ID or username
