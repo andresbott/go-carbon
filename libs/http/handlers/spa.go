@@ -88,66 +88,14 @@ const index = "index.html"
 
 func (h SpaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	// get the absolute path to prevent directory traversal
-	//path, err := filepath.Abs(r.URL.Path)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusBadRequest)
-	//	return
-	//}
-
-	// strip the path prefix from the requests and prepend with the path of the static directory
-	//path = filepath.Join(h.fsSubDir, strings.TrimPrefix(path, h.pathPrefix))
-
-	//spew.Dump(path)
-	//
-	//fi, err := h.fs.Open(path)
-	//_ = fi
-	//spew.Dump(err)
-
-	//if os.IsNotExist(err) {
-	//	spew.Dump("HERE")
-	//	spew.Dump(err)
-	//	spew.Dump(fi)
-	//	//fstat, _ := fi.Stat()
-	//	//|| fstat.IsDir()
-	//	// file does not exist, serve the index html file
-	//	//index, err := h.StaticFS.ReadFile(filepath.Join(h.StaticPath, indexFile))
-	//	//if err != nil {
-	//	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	//	return
-	//	//}
-	//	index := []byte("ddd")
-	//
-	//	spew.Dump(filepath.Join(h.FsSubDir, h.IndexFile))
-	//	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//	w.WriteHeader(http.StatusAccepted)
-	//	if _, err := w.Write(index); err != nil {
-	//		http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	}
-	//	return
-	//} else if err != nil {
-	//	spew.Dump("err")
-	//	// return 500 if it's not an error because the file is not found
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-
-	// get the subdirectory of the static dir and simply serve the file
-
-	//statics, err := fs.Sub(h.fs, h.fsSubDir)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//spew.Dump(statics)
-	//
-	//spew.Dump(r.URL)
-	//spew.Dump(h.fs)
+	reqPath := strings.TrimPrefix(r.URL.Path, h.pathPrefix)
+	if reqPath == "" {
+		reqPath = "/"
+	}
 
 	// serve index on root
-	if r.URL.Path == "/" {
-		path := filepath.Join(r.URL.Path, index)
+	if reqPath == "/" {
+		path := filepath.Join(reqPath, index)
 		isDir, err := checkDir(path, h.fs)
 		if os.IsNotExist(err) {
 			http.Error(w, "404 page not found", http.StatusNotFound)
@@ -156,13 +104,13 @@ func (h SpaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !isDir {
-			http.FileServerFS(h.fs).ServeHTTP(w, r)
+			http.StripPrefix(h.pathPrefix, http.FileServerFS(h.fs)).ServeHTTP(w, r)
 		}
 		return
 	}
 
 	// disable directory listing
-	if strings.HasSuffix(r.URL.Path, "/") {
+	if strings.HasSuffix(reqPath, "/") {
 		http.NotFound(w, r)
 		return
 	}
@@ -170,7 +118,7 @@ func (h SpaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// don't redirect an existing folder e.g. if r.URL.Path = /assets/ui
 	// instead of redirecting to /assets/ui/ and then returning a 404
 	// immediately check if it is a folder a return 404
-	isDir, err := checkDir(r.URL.Path, h.fs)
+	isDir, err := checkDir(reqPath, h.fs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,9 +127,7 @@ func (h SpaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "404 page not found", http.StatusNotFound)
 		return
 	}
-
-	http.FileServerFS(h.fs).ServeHTTP(w, r)
-	////StripAndServeFS(h.StripPrefix, statics).ServeHTTP(w, r)
+	http.StripPrefix(h.pathPrefix, http.FileServerFS(h.fs)).ServeHTTP(w, r)
 }
 
 func checkDir(path string, fs fs.FS) (bool, error) {

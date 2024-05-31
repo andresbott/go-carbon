@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -15,7 +16,7 @@ import (
 //go:embed testdata/ui/*
 var embedFs embed.FS
 
-func TestProcessPath(t *testing.T) {
+func TestSpaHandler(t *testing.T) {
 	tcs := []struct {
 		name    string
 		reqPath string
@@ -31,7 +32,7 @@ func TestProcessPath(t *testing.T) {
 			data:    "test index",
 		},
 		{
-			name:    "root without index returns 404",
+			name:    "root on folder without index returns 404",
 			reqPath: "/",
 			subDir:  "testdata/ui/assets",
 			expect:  http.StatusNotFound,
@@ -44,7 +45,7 @@ func TestProcessPath(t *testing.T) {
 			data:    "css style file",
 		},
 		{
-			name:    "serve css file",
+			name:    "file name as folder is 404",
 			reqPath: "/assets/style.css/",
 			subDir:  "testdata/ui",
 			expect:  http.StatusNotFound,
@@ -70,57 +71,76 @@ func TestProcessPath(t *testing.T) {
 		"embedFs": embedFs,
 	}
 
-	// test on all supported fs.FS
-	for name, fileSystem := range fileSystems {
-		t.Run(name, func(t *testing.T) {
+	subPaths := map[string]string{
+		"empty":           "",
+		"root":            "/",
+		"static-ui-slash": "/static/ui/",
+	}
 
-			// test all cases
-			for _, tc := range tcs {
-				t.Run(tc.name, func(t *testing.T) {
+	// test on different path permutations
+	for pathName, pathPrefix := range subPaths {
+		t.Run("path prefix "+pathName, func(t *testing.T) {
 
-					req := httptest.NewRequest(http.MethodGet, tc.reqPath, nil)
-					w := httptest.NewRecorder()
+			// test on all supported fs.FS
+			for name, fileSystem := range fileSystems {
+				t.Run(name, func(t *testing.T) {
 
-					handler, err := NewSpaHAndler(
-						fileSystem,
-						tc.subDir,
-						"",
-					)
-					if err != nil {
-						t.Fatal(err)
-					}
-					handler.ServeHTTP(w, req)
+					// test all cases
+					for _, tc := range tcs {
+						t.Run(tc.name, func(t *testing.T) {
 
-					got := w.Code
-					if diff := cmp.Diff(got, tc.expect); diff != "" {
-						t.Errorf("unexpected response code (-got +want)\n%s", diff)
-					}
+							joinPath, _ := url.JoinPath(pathPrefix, tc.reqPath)
+							if !strings.HasPrefix(joinPath, "/") {
+								joinPath = "/" + joinPath
+							}
 
-					// field tc.data used to verify the file content
-					if w.Code == http.StatusOK && tc.data != "" {
-						resp := w.Result()
-						defer resp.Body.Close()
+							req := httptest.NewRequest(http.MethodGet, joinPath, nil)
+							w := httptest.NewRecorder()
 
-						data, err := io.ReadAll(resp.Body)
-						if err != nil {
-							t.Errorf("expected error to be nil got %v", err)
-						}
-						if !strings.Contains(string(data), tc.data) {
-							t.Logf("got: %s", string(data))
-							t.Errorf("the response body does NOT contain the expected string: %s ", tc.data)
-						}
-					}
-					// field data used to verify redirect target
-					if w.Code == http.StatusMovedPermanently && tc.data != "" {
-						target := w.Header().Get("location")
+							handler, err := NewSpaHAndler(
+								fileSystem,
+								tc.subDir,
+								pathPrefix,
+							)
+							if err != nil {
+								t.Fatal(err)
+							}
+							handler.ServeHTTP(w, req)
 
-						if diff := cmp.Diff(target, tc.data); diff != "" {
-							t.Errorf("unexpected value (-got +want)\n%s", diff)
-						}
+							got := w.Code
+							if diff := cmp.Diff(got, tc.expect); diff != "" {
+
+								t.Errorf("unexpected response code (-got +want)\n%s", diff)
+								t.Logf("got body response: %s", w.Body)
+							}
+
+							// field tc.data used to verify the file content
+							if w.Code == http.StatusOK && tc.data != "" {
+								resp := w.Result()
+								defer resp.Body.Close()
+
+								data, err := io.ReadAll(resp.Body)
+								if err != nil {
+									t.Errorf("expected error to be nil got %v", err)
+								}
+								if !strings.Contains(string(data), tc.data) {
+									t.Logf("got: %s", string(data))
+									t.Errorf("the response body does NOT contain the expected string: %s ", tc.data)
+								}
+							}
+							// field data used to verify redirect target
+							if w.Code == http.StatusMovedPermanently && tc.data != "" {
+								target := w.Header().Get("location")
+
+								if diff := cmp.Diff(target, tc.data); diff != "" {
+									t.Errorf("unexpected value (-got +want)\n%s", diff)
+								}
+							}
+						})
 					}
 				})
 			}
 		})
-
 	}
+
 }
