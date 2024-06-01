@@ -46,7 +46,7 @@ const router = createRouter({
         path: '/login',
         name: 'login',
         component: () => import('@/views/LoginView.vue')
-    }
+    },
     // {
     //   path: '/landing',
     //   name: 'landing',
@@ -73,6 +73,14 @@ const router = createRouter({
     //   name: 'error',
     //   component: () => import('@/views/pages/auth/Error.vue')
     // }
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('@/views/404.vue')
+    },
+
+    // { path: "*", component: {        template: '<p>Page Not Found</p>'      }
+    
   ]
 });
 

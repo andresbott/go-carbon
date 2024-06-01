@@ -109,14 +109,13 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	r.Path("/demo").Handler(&demoPage)
 
 	// SPA
-	spaHndlr := spa.SpaHandler{
-		StaticFS:    spa.UiFiles,
-		StaticPath:  spa.UIDir,
-		IndexPath:   "index.html",
-		StripPrefix: "/",
+	spaHandler, err := spa.NewCarbonSpa()
+	if err != nil {
+		return nil, err
 	}
+	_ = spaHandler
 
-	r.Methods(http.MethodGet).PathPrefix("/").Handler(spaHndlr)
+	r.Methods(http.MethodGet).PathPrefix("/").Handler(spaHandler)
 
 	return &MyAppHandler{
 		router: r,
