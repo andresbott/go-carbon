@@ -17,7 +17,7 @@ import (
 
 func display(key *otp.Key, data []byte) {
 	fmt.Printf("Issuer:       %s\n", key.Issuer())
-	fmt.Printf("Account Name: %s\n", key.AccountName())
+	fmt.Printf("Account User: %s\n", key.AccountName())
 	fmt.Printf("Secret:       %s\n", key.Secret())
 	fmt.Println("Writing PNG to qr-code.png....")
 	os.WriteFile("qr-code.png", data, 0644)

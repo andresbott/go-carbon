@@ -21,21 +21,22 @@ verify: fmt test benchmark lint ## run all verification and code structure tiers
 benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
 
-serve: ## run go tests
+serve: ## start the GO service
 	@go run main.go start
 
-build-ui: ## build the web ui
-	@cd webui && \
-	npm install && \
-	npm run build
+serve-ui: package-ui serve## build the UI and start the GO service
 
-copy-ui:
+package-ui: build-ui ## build the web and copy into Go pacakge
 	rm -rf ./app/spa/files/ui*
 	mkdir -p ./app/spa/files/ui
 	cp -r ./webui/dist/* ./app/spa/files/ui/
+build-ui:
+	@cd webui && \
+	npm install && \
+	export VITE_BASE="/ui" && \
+	npm run build
 
-build: build-ui copy-ui ## build a static binary that includes the web ui
-
+build: build-ui package-ui ## build a static binary that includes the web ui
 
 
 help: ## help command

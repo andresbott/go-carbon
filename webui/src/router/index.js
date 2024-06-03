@@ -1,7 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AppLayout from '@/layout/AppLayout.vue';
+// import process from "eslint-plugin-vue/lib/configs/base.js";
+
 
 const router = createRouter({
+  // history: createWebHistory(process.env.VITE_BASE || ''),
   history: createWebHistory(),
   routes: [
     {

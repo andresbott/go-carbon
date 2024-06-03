@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
@@ -198,30 +199,55 @@ func (auth *SessionMgr) ReadUpdate(r *http.Request, w http.ResponseWriter) (Sess
 // meta-data about structs, and an instance can be shared safely.
 var formDecoder = schema.NewDecoder()
 
+type loginData struct {
+	User     string `json:"user"`
+	Pw       string `json:"password"`
+	Redirect string
+}
+
 // FormAuthHandler is a simple session auth handler that will respond to a form POST request and login a user
 // this can be used as simple implementations or as inspiration to customize an authentication middleware
 func FormAuthHandler(session *SessionMgr, user UserLogin) http.Handler {
-	type LoginFormData struct {
-		Name     string
-		Pw       string
-		Redirect string
-	}
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		var payload LoginFormData
+		var payload loginData
 		// r.PostForm is a map of our POST form values
 		err = formDecoder.Decode(&payload, r.PostForm)
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		if user.AllowLogin(payload.Name, payload.Pw) {
-			err = session.Login(r, w, payload.Name)
+		if user.AllowLogin(payload.User, payload.Pw) {
+			err = session.Login(r, w, payload.User)
+			if err != nil {
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	})
+}
+
+// JsonAuthHandler is a simple session auth handler that will respond to a Json POST request and login a user
+// this can be used as simple implementations or as inspiration to customize an authentication middleware
+func JsonAuthHandler(session *SessionMgr, user UserLogin) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload loginData
+
+		err := json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if user.AllowLogin(payload.User, payload.Pw) {
+			err = session.Login(r, w, payload.User)
 			if err != nil {
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return

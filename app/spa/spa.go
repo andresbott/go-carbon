@@ -9,10 +9,10 @@ import (
 //go:embed files/ui/*
 var UiFiles embed.FS
 
-func NewCarbonSpa() (http.Handler, error) {
+func NewCarbonSpa(path string) (http.Handler, error) {
 	return handlers.NewSpaHAndler(
 		UiFiles,
 		"files/ui",
-		"/",
+		path,
 	)
 }

@@ -11,6 +11,7 @@
   * MFA
   * logout
   * wrong login attempts, to greylist or blacklist
+* Add UI testing using ROD on the spa package
   
 + change the log middleware to intercept reponse error messages and replace them with generic errors in prod envs
   + this way all the handlers can write specific errors into the response, but the middleware makes sure taht they are not leaked
@@ -24,6 +25,7 @@
 * multiple log output stdout /  file / systemd journal
 * prometheus metrics
 * tracing?
+
 
 ## to be verified
 * make sure the user manager uses a salt when storing passwords

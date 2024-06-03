@@ -1,7 +1,8 @@
-package auth
+package auth_test
 
 import (
 	"fmt"
+	"git.andresbott.com/Golang/carbon/libs/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,10 +10,18 @@ import (
 )
 
 type dummyUser struct {
+	user string
+	pass string
 }
 
 func (st dummyUser) AllowLogin(user string, hash string) bool {
-	if user == "admin" && hash == "admin" {
+	if st.user == "" {
+		st.user = "admin"
+	}
+	if st.pass == "" {
+		st.pass = "admin"
+	}
+	if user == st.user && hash == st.pass {
 		return true
 	}
 	return false
@@ -60,7 +69,7 @@ func TestBasicAuthResponseCode(t *testing.T) {
 		},
 	}
 
-	bauth := Basic{
+	bauth := auth.Basic{
 		User: dummyUser{},
 	}
 

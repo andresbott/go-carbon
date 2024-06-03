@@ -1,6 +1,5 @@
 <script setup>
 import Vertical from "@/components/legos/Vertical.vue";
-import AppTopbar from "@/layout/AppTopbar.vue";
 import Horizontal from "@/components/legos/horizontal.vue";
 import UserLogin from "@/components/UserLogin.vue";
 </script>

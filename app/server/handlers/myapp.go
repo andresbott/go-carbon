@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"git.andresbott.com/Golang/carbon/app/spa"
 	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
+	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/log/zero"
 	"git.andresbott.com/Golang/carbon/libs/prometheus"
@@ -54,8 +55,6 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 			"demo": "demo",
 		},
 	}
-	// add basic auth with fixed users
-	basicAuth(r, demoUsers)
 
 	// use session auth
 	err := sessionAuthentication(r, demoUsers)
@@ -63,16 +62,14 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 		return nil, err
 	}
 
+	// user management
+	// --------------------------
 	// db managed users
 	sampleDbUser, err := sampleUserManager()
 	if err != nil {
 		return nil, err
 	}
-	// add basic auth with users from a in-memory DB
-	basicAuthDb(r, sampleDbUser)
 
-	// user management
-	// --------------------------
 	userDbHandler, err := userhandler.NewHandler(sampleDbUser)
 	if err != nil {
 		return nil, err
@@ -108,8 +105,25 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	}
 	r.Path("/demo").Handler(&demoPage)
 
-	// SPA
-	spaHandler, err := spa.NewCarbonSpa()
+	// SPA starts here: ====================================================
+
+	hashKey := []byte("oach9iu2uavahcheephi4FahzaeNge8yeecie4jee9rah9ahrah6tithai7Oow5U")
+	blockKey := []byte("eeth3oon5eewifaogeibieShey5eiJ0E")
+
+	sessStor, err := auth.FsStore("", hashKey, blockKey)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionAuth, err := auth.NewSessionMgr(auth.SessionCfg{
+		Store: sessStor,
+	})
+
+	loginHandler := auth.JsonAuthHandler(sessionAuth, demoUsers)
+	r.Path("/login").Methods(http.MethodPost).Handler(loginHandler)
+
+	// load the SPA page
+	spaHandler, err := spa.NewCarbonSpa("/")
 	if err != nil {
 		return nil, err
 	}
