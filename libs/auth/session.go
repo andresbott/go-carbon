@@ -105,7 +105,7 @@ type SessionData struct {
 	LastUpdate  time.Time
 }
 
-func (d *SessionData) process(extend time.Duration) {
+func (d *SessionData) Process(extend time.Duration) {
 	// check expiration
 	if d.Expiration.Before(time.Now()) {
 		d.IsAuthenticated = false
@@ -125,6 +125,31 @@ const (
 	sessionDataKey = "data"
 )
 
+// Login is a convenience function to write a new logged-in session for a specific user id and write it
+func (auth *SessionMgr) Login(r *http.Request, w http.ResponseWriter, user string) error {
+	authData := SessionData{
+		UserId:          user,
+		IsAuthenticated: true,
+		Expiration:      time.Now().Add(auth.sessionDur),
+		ForceReAuth:     time.Now().Add(auth.maxSessionDur),
+	}
+	session, err := auth.store.Get(r, SessionName)
+	if err != nil {
+		return err
+	}
+	return auth.write(r, w, session, authData)
+}
+
+// the Write public function is commented out for now, until it might be needed to not blow the API
+// Use Login() instead
+//func (auth *SessionMgr) Write(r *http.Request, w http.ResponseWriter, data SessionData) ( error) {
+//	session, err := auth.store.Get(r, SessionName)
+//	if err != nil {
+//		return err
+//	}
+//	return auth.write(r, w, session, data)
+//}
+
 func (auth *SessionMgr) write(r *http.Request, w http.ResponseWriter, session *sessions.Session, data SessionData) error {
 	now := time.Now()
 	if data.LastUpdate.Add(auth.minWriteSpace).After(now) {
@@ -140,25 +165,6 @@ func (auth *SessionMgr) write(r *http.Request, w http.ResponseWriter, session *s
 	return nil
 }
 
-func (auth *SessionMgr) Write(r *http.Request, w http.ResponseWriter, data SessionData) error {
-	session, err := auth.store.Get(r, SessionName)
-	if err != nil {
-		return err
-	}
-	return auth.write(r, w, session, data)
-}
-
-// Login is a convenience function to write a new logged-in session for a specific user id and write it
-func (auth *SessionMgr) Login(r *http.Request, w http.ResponseWriter, user string) error {
-	authData := SessionData{
-		UserId:          user,
-		IsAuthenticated: true,
-		Expiration:      time.Now().Add(auth.sessionDur),
-		ForceReAuth:     time.Now().Add(auth.maxSessionDur),
-	}
-	return auth.Write(r, w, authData)
-}
-
 func (auth *SessionMgr) read(r *http.Request) (SessionData, *sessions.Session, error) {
 	session, err := auth.store.Get(r, SessionName)
 	if err != nil {
@@ -169,8 +175,7 @@ func (auth *SessionMgr) read(r *http.Request) (SessionData, *sessions.Session, e
 		return SessionData{}, nil, err
 	}
 	authData := key.(SessionData)
-	authData.process(auth.sessionDur)
-
+	authData.Process(auth.sessionDur)
 	return authData, session, err
 }
 func (auth *SessionMgr) Read(r *http.Request) (SessionData, error) {
@@ -179,20 +184,40 @@ func (auth *SessionMgr) Read(r *http.Request) (SessionData, error) {
 }
 
 // ReadUpdate is used to read the session, and update the session expiry timestamp
+// it only extends the session if enough time has passed since the last write to not overload
+// the session store on many requests.
 // it returns the session data if the user is logged in
 func (auth *SessionMgr) ReadUpdate(r *http.Request, w http.ResponseWriter) (SessionData, error) {
 	data, session, err := auth.read(r)
 	if err != nil {
-		return data, err
+		return SessionData{}, err
 	}
 
 	if data.IsAuthenticated {
 		err = auth.write(r, w, session, data)
 		if err != nil {
-			return data, err
+			return SessionData{}, err
 		}
+		return data, nil
 	}
-	return data, nil
+	return SessionData{}, nil
+}
+
+// Middleware is a simple session auth middleware that will only allow access if the user is logged in
+// this can be used as simple implementations or as inspiration to customize an authentication middleware
+func (auth *SessionMgr) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := auth.ReadUpdate(r, w)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		if data.IsAuthenticated {
+			next.ServeHTTP(w, r)
+			return
+		}
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
 }
 
 // Set a Decoder instance as a package global, because it caches
@@ -256,21 +281,5 @@ func JsonAuthHandler(session *SessionMgr, user UserLogin) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-	})
-}
-
-// Middleware is a simple session auth middleware that will only allow access if the user is logged in
-// this can be used as simple implementations or as inspiration to customize an authentication middleware
-func Middleware(session *SessionMgr, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, err := session.ReadUpdate(r, w)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		if data.IsAuthenticated {
-			next.ServeHTTP(w, r)
-			return
-		}
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	})
 }

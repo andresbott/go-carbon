@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"net/http"
@@ -23,6 +25,8 @@ func TestSessionManagement(t *testing.T) {
 
 	for _, storeType := range stores {
 		t.Run(storeType, func(t *testing.T) {
+			t.Parallel()
+
 			t.Run("access resource after login", func(t *testing.T) {
 				svr, c := testServer(50*time.Millisecond, 200*time.Millisecond, 0, useCookieStore)
 				defer svr.Close()
@@ -77,7 +81,7 @@ func TestSessionManagement(t *testing.T) {
 			})
 
 			t.Run("renew session", func(t *testing.T) {
-				svr, c := testServer(50*time.Millisecond, 2000*time.Millisecond, 0, useCookieStore)
+				svr, c := testServer(50*time.Millisecond, 2000*time.Millisecond, 1*time.Millisecond, useCookieStore)
 				defer svr.Close()
 				// perform login
 				resp := doReq(c, svr.URL+"/login", t)
@@ -263,51 +267,50 @@ func TestJsonAuthHandler(t *testing.T) {
 	}
 }
 
-// TODO refactor to be better testeable
-//func TestProcessSessionData(t *testing.T) {
-//
-//	tcs := []struct {
-//		name string
-//		in   auth.SessionData
-//		want auth.SessionData
-//	}{
-//		{
-//			name: "session valid",
-//			in: auth.SessionData{IsAuthenticated: true,
-//				Expiration:  getTime("10m"),
-//				ForceReAuth: getTime("1m"),
-//			},
-//			want: auth.SessionData{IsAuthenticated: true},
-//		},
-//		{
-//			name: "session expired",
-//			in: auth.SessionData{IsAuthenticated: true,
-//				Expiration: getTime("-1s"),
-//			},
-//			want: auth.SessionData{IsAuthenticated: false},
-//		},
-//		{
-//			name: "session NOT expired, but hard logout",
-//			in: auth.SessionData{IsAuthenticated: true,
-//				Expiration:  getTime("10m"),
-//				ForceReAuth: getTime("-1s"),
-//			},
-//			want: auth.SessionData{IsAuthenticated: false},
-//		},
-//	}
-//
-//	for _, tc := range tcs {
-//		t.Run(tc.name, func(t *testing.T) {
-//
-//			got := tc.in
-//			got.process(0)
-//			want := tc.want
-//			if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(auth.SessionData{}, "Expiration", "ForceReAuth")); diff != "" {
-//				t.Errorf("Content mismatch (-want +got):\n%s", diff)
-//			}
-//		})
-//	}
-//}
+func TestProcessSessionData(t *testing.T) {
+
+	tcs := []struct {
+		name string
+		in   auth.SessionData
+		want auth.SessionData
+	}{
+		{
+			name: "session valid",
+			in: auth.SessionData{IsAuthenticated: true,
+				Expiration:  getTime("10m"),
+				ForceReAuth: getTime("1m"),
+			},
+			want: auth.SessionData{IsAuthenticated: true},
+		},
+		{
+			name: "session expired",
+			in: auth.SessionData{IsAuthenticated: true,
+				Expiration: getTime("-1s"),
+			},
+			want: auth.SessionData{IsAuthenticated: false},
+		},
+		{
+			name: "session NOT expired, but hard logout",
+			in: auth.SessionData{IsAuthenticated: true,
+				Expiration:  getTime("10m"),
+				ForceReAuth: getTime("-1s"),
+			},
+			want: auth.SessionData{IsAuthenticated: false},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+
+			got := tc.in
+			got.Process(0)
+			want := tc.want
+			if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(auth.SessionData{}, "Expiration", "ForceReAuth")); diff != "" {
+				t.Errorf("Content mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
 func doReq(client *http.Client, url string, t *testing.T) *http.Response {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
@@ -337,7 +340,6 @@ func testServer(SessionDur, MaxSessionDur, update time.Duration, storeType strin
 		MaxSessionDur: MaxSessionDur,
 		MinWriteSpace: update,
 	})
-	//authSess.minWriteSpace = update
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -361,7 +363,7 @@ func testServer(SessionDur, MaxSessionDur, update time.Duration, storeType strin
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "ok", http.StatusOK)
 			})
-			handler := auth.Middleware(authSess, h)
+			handler := authSess.Middleware(h)
 			handler.ServeHTTP(w, r)
 		}
 	})
