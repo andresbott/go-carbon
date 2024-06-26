@@ -38,6 +38,13 @@ build-ui:
 
 build: build-ui package-ui ## build a static binary that includes the web ui
 
+swagger: swagger-build ## build and serve the swagger spec
+	@cd zarf/swagger && go run main.go
+
+# this uses https://goswagger.io/go-swagger/
+swagger-build: ## build the swagger spec
+	rm  zarf/swagger/swagger.json
+	swagger generate spec main.go > zarf/swagger/swagger.json
 
 help: ## help command
 	@egrep '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST)  | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

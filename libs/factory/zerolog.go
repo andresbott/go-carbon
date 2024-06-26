@@ -1,4 +1,4 @@
-package zero
+package factory
 
 import (
 	"github.com/rs/zerolog"
@@ -27,7 +27,7 @@ const (
 	TraceLevel Level = -1
 )
 
-func Default(lev Level, w io.Writer) *zerolog.Logger {
+func DefaultLogger(lev Level, w io.Writer) *zerolog.Logger {
 	if w == nil {
 		w = os.Stdout
 	}
@@ -38,8 +38,8 @@ func Default(lev Level, w io.Writer) *zerolog.Logger {
 
 }
 
-// Silent returns a Zerologger that does not write any output
-func Silent() *zerolog.Logger {
+// SilentLogger returns a Zerologger that does not write any output
+func SilentLogger() *zerolog.Logger {
 	l := zerolog.New(io.Discard)
 	return &l
 }

@@ -1,13 +1,13 @@
-package handlers
+package server
 
 import (
 	_ "embed"
+	"git.andresbott.com/Golang/carbon/app/server/routes"
 	"git.andresbott.com/Golang/carbon/app/spa"
 	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
-	"git.andresbott.com/Golang/carbon/libs/log/zero"
-	"git.andresbott.com/Golang/carbon/libs/prometheus"
+	"git.andresbott.com/Golang/carbon/libs/http/middleware"
 	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
@@ -29,7 +29,7 @@ func (h *MyAppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
 
-//go:embed tmpl/loginForm.html
+//go:embed handlers/tmpl/loginForm.html
 var loginForm string
 
 // NewAppHandler generates the main url router handler to be used in the server
@@ -37,17 +37,27 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 
 	r := mux.NewRouter()
 
-	// add logging middleware
-	r.Use(func(handler http.Handler) http.Handler {
-		return zero.LoggingMiddleware(handler, l)
-	})
+	// add production middleware
+	pm := middleware.NewProd(l)
+	r.Use(pm.Handler)
 
-	promMiddle := prometheus.NewMiddleware(prometheus.Cfg{
-		MetricPrefix: "myApp",
-	})
-	r.Use(func(handler http.Handler) http.Handler {
-		return promMiddle.Handler(handler)
-	})
+	// add logging middleware
+	//r.Use(func(handler http.Handler) http.Handler {
+	//	return middleware.LoggingMiddleware(handler, l)
+	//})
+
+	//promMiddle := middleware.NewPrometheus(middleware.PromCfg{
+	//	MetricPrefix: "myApp",
+	//})
+	//r.Use(func(handler http.Handler) http.Handler {
+	//	return promMiddle.Handler(handler)
+	//})
+
+	// attach handlers
+	err := routes.ApiV0(r) // api/v0 routes
+	if err != nil {
+		return nil, err
+	}
 
 	// static demos users
 	demoUsers := user.StaticUsers{
@@ -57,10 +67,10 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	}
 
 	// use session auth
-	err := sessionAuthentication(r, demoUsers)
-	if err != nil {
-		return nil, err
-	}
+	//err = handlers2.sessionAuthentication(r, demoUsers)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	// user management
 	// --------------------------
@@ -89,14 +99,14 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 				Text: "Basic auth protected using DB demoUsers (test@mail.com:1234)",
 				Url:  "/basic-auth-db",
 			},
-			{
-				Text: "session based protected page",
-				Url:  sessionContent,
-			},
-			{
-				Text: "session based login (demo:demo)",
-				Url:  sessionLogin,
-			},
+			//{
+			//	Text: "session based protected page",
+			//	Url:  handlers2.sessionContent,
+			//},
+			//{
+			//	Text: "session based login (demo:demo)",
+			//	Url:  handlers2.sessionLogin,
+			//},
 			{
 				Text: "User handling",
 				Url:  "/user",

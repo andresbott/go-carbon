@@ -377,13 +377,6 @@ func testServer(SessionDur, MaxSessionDur, update time.Duration, storeType strin
 	return svr, c
 }
 
-func getClient() *http.Client {
-	c := http.Client{}
-	jar, _ := cookiejar.New(nil)
-	c.Jar = jar
-	return &c
-}
-
 func getTime(add string) time.Time {
 	if add == "" {
 		add = "0s"

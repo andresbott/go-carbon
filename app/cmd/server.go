@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"git.andresbott.com/Golang/carbon/app/server"
-	"git.andresbott.com/Golang/carbon/libs/log/zero"
+	"git.andresbott.com/Golang/carbon/libs/factory"
 	"github.com/spf13/cobra"
 
 	"gorm.io/driver/sqlite"
@@ -22,7 +22,7 @@ func serverCmd() *cobra.Command {
 			// and creates the server accordingly
 			// in this case the command is opinionated
 
-			l := zero.Default(zero.InfoLevel, nil)
+			l := factory.DefaultLogger(factory.InfoLevel, nil)
 
 			db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
 				//Logger: zeroGorm.New(l.ZeroLog, zeroGorm.Cfg{IgnoreRecordNotFoundError: true}),

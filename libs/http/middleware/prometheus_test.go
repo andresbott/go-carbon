@@ -1,8 +1,8 @@
-package prometheus_test
+package middleware_test
 
 import (
 	"fmt"
-	prommidleware "git.andresbott.com/Golang/carbon/libs/prometheus"
+	"git.andresbott.com/Golang/carbon/libs/http/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
@@ -20,11 +20,12 @@ func testHandler(statusCode int) http.Handler {
 	})
 }
 
-func TestMiddleware(t *testing.T) {
+func TestPromMiddleware(t *testing.T) {
 	tcs := []struct {
-		name          string
-		requests      func(h http.Handler)
-		cfg           prommidleware.Cfg
+		name         string
+		requests     func(h http.Handler)
+		metricPrefix string
+
 		statusCode    int
 		expectedLines []string
 	}{
@@ -39,27 +40,10 @@ func TestMiddleware(t *testing.T) {
 			},
 			statusCode: 200,
 			expectedLines: []string{
-				`http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="200",type="HTTP/1.1",le="0.005"} 1`,
-				`http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="200",type="HTTP/1.1",le="0.01"} 1`,
-				`http_duration_seconds_bucket{addr="/ble/bli",isError="false",method="POST",status="200",type="HTTP/1.1",le="0.01"} 1`,
-				`http_duration_seconds_bucket{addr="/ble/bli",isError="false",method="POST",status="200",type="HTTP/1.1",le="0.25"} 1`,
-			},
-		},
-
-		{
-			name: "status codes are grouped",
-			requests: func(h http.Handler) {
-				r := httptest.NewRequest("GET", "/bla", nil)
-				rec := httptest.NewRecorder()
-				h.ServeHTTP(rec, r)
-			},
-			cfg: prommidleware.Cfg{
-				GroupRespCodes: true,
-			},
-			statusCode: 200,
-			expectedLines: []string{
-				`http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="2xx",type="HTTP/1.1",le="0.005"} 1`,
-				`http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="2xx",type="HTTP/1.1",le="0.01"} 1`,
+				`requests_http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="200",type="HTTP/1.1",le="0.005"} 1`,
+				`requests_http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="200",type="HTTP/1.1",le="0.01"} 1`,
+				`requests_http_duration_seconds_bucket{addr="/ble/bli",isError="false",method="POST",status="200",type="HTTP/1.1",le="0.01"} 1`,
+				`requests_http_duration_seconds_bucket{addr="/ble/bli",isError="false",method="POST",status="200",type="HTTP/1.1",le="0.25"} 1`,
 			},
 		},
 		{
@@ -69,10 +53,8 @@ func TestMiddleware(t *testing.T) {
 				rec := httptest.NewRecorder()
 				h.ServeHTTP(rec, r)
 			},
-			cfg: prommidleware.Cfg{
-				MetricPrefix: "ehmm",
-			},
-			statusCode: 200,
+			metricPrefix: "ehmm",
+			statusCode:   200,
 			expectedLines: []string{
 				`ehmm_http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="200",type="HTTP/1.1",le="0.005"} 1`,
 				`ehmm_http_duration_seconds_bucket{addr="/bla",isError="false",method="GET",status="200",type="HTTP/1.1",le="0.01"} 1`,
@@ -83,17 +65,10 @@ func TestMiddleware(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			reg := prometheus.NewRegistry()
-			cfg := tc.cfg
-			cfg.Registry = reg
-			if cfg.MetricPrefix == "" {
-				cfg.MetricPrefix = strings.ReplaceAll(tc.name, " ", "_")
-			}
+			hist := middleware.NewHistogram(tc.metricPrefix, nil, reg)
 
-			mid := prommidleware.NewMiddleware(cfg)
-
-			h := mid.Handler(testHandler(tc.statusCode))
-
-			tc.requests(h)
+			promHandler := middleware.PromMiddleware(testHandler(tc.statusCode), hist)
+			tc.requests(promHandler)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest("GET", "/metrics", nil)

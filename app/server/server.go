@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"git.andresbott.com/Golang/carbon/app/server/handlers"
-	"git.andresbott.com/Golang/carbon/libs/log/zero"
+	"git.andresbott.com/Golang/carbon/libs/factory"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -41,10 +40,10 @@ func NewServer(cfg Cfg) *Server {
 	}
 
 	if cfg.Logger == nil {
-		cfg.Logger = zero.Silent()
+		cfg.Logger = factory.SilentLogger()
 	}
 
-	handler, err := handlers.NewAppHandler(cfg.Logger, cfg.Db)
+	handler, err := NewAppHandler(cfg.Logger, cfg.Db)
 	if err != nil {
 		panic(fmt.Sprintf("unable to initialize app: %v", err))
 	}
