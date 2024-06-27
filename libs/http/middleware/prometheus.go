@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
 	"net/http"
 	"strconv"
 	"time"
@@ -47,11 +48,27 @@ func NewHistogram(prefix string, buckets []float64, registry prometheus.Register
 func PromMiddleware(next http.Handler, histogram Histogram) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timeStart := time.Now()
-		respWriter := NewWriter(w)
+		respWriter := NewWriter(w, false)
 		// serve the request
 		next.ServeHTTP(respWriter, r)
 		// get the duration
 		timeDiff := time.Since(timeStart)
+		observe(histogram, r, respWriter.StatusCode(), timeDiff)
+		return
+	})
+}
+
+func PromLogMiddleware(next http.Handler, histogram Histogram, l *zerolog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		timeStart := time.Now()
+		respWriter := NewWriter(w, false)
+		// serve the request
+		next.ServeHTTP(respWriter, r)
+		// get the duration
+		timeDiff := time.Since(timeStart)
+		// log the request
+		log(l, r, respWriter.StatusCode(), timeDiff)
+		// add prometheus metric
 		observe(histogram, r, respWriter.StatusCode(), timeDiff)
 		return
 	})

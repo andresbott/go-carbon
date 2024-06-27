@@ -13,10 +13,10 @@ import (
 	"testing"
 )
 
-func testHandler(statusCode int) http.Handler {
+func testHandler(statusCode int, message string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "ok")
+		fmt.Fprint(w, message)
 	})
 }
 
@@ -67,7 +67,7 @@ func TestPromMiddleware(t *testing.T) {
 			reg := prometheus.NewRegistry()
 			hist := middleware.NewHistogram(tc.metricPrefix, nil, reg)
 
-			promHandler := middleware.PromMiddleware(testHandler(tc.statusCode), hist)
+			promHandler := middleware.PromMiddleware(testHandler(tc.statusCode, "ok"), hist)
 			tc.requests(promHandler)
 
 			rec := httptest.NewRecorder()

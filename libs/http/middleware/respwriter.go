@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bytes"
-	"fmt"
+	"git.andresbott.com/Golang/carbon/libs/limitedbuffer"
 	"net/http"
 	"strconv"
 )
@@ -12,19 +12,23 @@ import (
 type StatWriter struct {
 	http.ResponseWriter
 	statusCode    int
-	InterceptBody bool // write a limited amount of chars into a buffer in case a non 200 code
-	buf           limBuf
+	interceptBody bool // write a limited amount of chars into a buffer in case a non 200 code
+	buf           limitedbuffer.Buffer
 }
 
 // NewWriter will return a pointer to a response writer
-func NewWriter(w http.ResponseWriter) *StatWriter {
+// if teeBodyOnErr is set to true, and in case of a non 200 status code,
+// the writer will not write the Response but instead into it's own buffer.
+// this allows to modify the response before writing it to the output
+func NewWriter(w http.ResponseWriter, teeBodyOnErr bool) *StatWriter {
 	// WriteHeader(int) is not called if the response is 200 (implicit response code) so it needs to be the default
 	return &StatWriter{
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
-		buf: limBuf{
-			cap: 1000,
-			buf: &bytes.Buffer{},
+		interceptBody:  teeBodyOnErr,
+		buf: limitedbuffer.Buffer{
+			Size: 1000,
+			Buf:  &bytes.Buffer{},
 		},
 	}
 }
@@ -39,7 +43,7 @@ func (r *StatWriter) StatusCodeStr() string {
 
 // Write returns underlying Write result, while counting data size
 func (r *StatWriter) Write(b []byte) (int, error) {
-	if r.InterceptBody && r.statusCode != 200 {
+	if r.interceptBody && r.statusCode != 200 {
 		return r.buf.Write(b)
 	}
 	return r.ResponseWriter.Write(b)
@@ -53,19 +57,4 @@ func (r *StatWriter) WriteHeader(code int) {
 
 func IsStatusError(statusCode int) bool {
 	return statusCode < 200 || statusCode >= 400
-}
-
-// limited buffer than only accepts up to certain size
-type limBuf struct {
-	cap int
-	buf *bytes.Buffer
-}
-
-func (b *limBuf) Write(p []byte) (n int, err error) {
-	if len(p)+b.buf.Len() >= b.cap {
-		return len(p), fmt.Errorf("buf limit reached")
-	} else {
-		b.buf.Write(p)
-	}
-	return len(p), nil
 }

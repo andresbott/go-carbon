@@ -10,7 +10,7 @@ import (
 func ZerologMiddleware(next http.Handler, l *zerolog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timeStart := time.Now()
-		respWriter := NewWriter(w)
+		respWriter := NewWriter(w, false)
 		// serve the request
 		next.ServeHTTP(respWriter, r)
 		// get the duration

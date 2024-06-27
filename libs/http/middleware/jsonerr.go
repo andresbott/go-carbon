@@ -3,6 +3,7 @@ package middleware
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -11,15 +12,6 @@ type jsonErr struct {
 	Code  int
 }
 
-//	func JsonErrorHandler(err string, code int) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			jsonError(w, err, code)
-//		})
-//	}
-//
-//	func JsonErrMethodNotAllowed() http.Handler {
-//		return JsonErrorHandler("method not allowed", http.StatusMethodNotAllowed)
-//	}
 func jsonError(w http.ResponseWriter, error string, code int) {
 	if code == 0 {
 		code = http.StatusInternalServerError
@@ -35,27 +27,33 @@ func jsonError(w http.ResponseWriter, error string, code int) {
 	fmt.Fprint(w, string(byteErr))
 }
 
+// JsonErrMiddleware is a middleware mostly intended to handle http errors on a JSON api
+// it will check if a handler wrote a non 2xx response code, intercept the response and
+// transform it to a generic JSON error response.
 //
-//func ErrorHandler(err string, code int) http.Handler {
-//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		http.Error(w, err, code)
-//	})
-//}
-
-HERE + test
-// TODO configuration to return verbose error or generic
-// todo drop the original response writer in case of error
-// TODO unify in the request logger midlleware
-// are there any response codes other than 200 that contain usable body?
-func JsonErrMiddleware(next http.Handler) http.Handler {
+// the motivation is that we don't always control the error format of our responses and maybe
+// also don't want to force json error responses always
+//
+// if genericMessage is set to true, the error message will not printed; only the generic
+// message related to the response code; this is intended for production environments
+// to prevent leaking details about errors.
+// TODO: this assumes that only 200 response codes contain usable body, e.g. not usable for rendering html
+func JsonErrMiddleware(next http.Handler, genericMessage bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		respWriter := NewWriter(w)
-		respWriter.InterceptBody = true
+		respWriter := NewWriter(w, true)
 		next.ServeHTTP(respWriter, r)
-
 		code := respWriter.StatusCode()
+		msg := http.StatusText(code)
+
+		if !genericMessage {
+			msgB, err := io.ReadAll(respWriter.buf)
+			if err != nil {
+				jsonError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			msg = string(msgB)
+		}
 		if IsStatusError(code) {
-			jsonError(w, http.StatusText(code), code)
+			jsonError(w, msg, code)
 		}
 	})
 }
