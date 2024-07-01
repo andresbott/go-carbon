@@ -1,8 +1,7 @@
-package server
+package router
 
 import (
 	_ "embed"
-	"git.andresbott.com/Golang/carbon/app/server/routes"
 	"git.andresbott.com/Golang/carbon/app/spa"
 	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/auth"
@@ -29,32 +28,21 @@ func (h *MyAppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
 
-//go:embed handlers/tmpl/loginForm.html
-var loginForm string
+//  go: embed ../handlers/tmpl/loginForm.html
+//var loginForm string
 
 // NewAppHandler generates the main url router handler to be used in the server
 func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 
 	r := mux.NewRouter()
 
-	// add production middleware
-	pm := middleware.NewProd(l)
-	r.Use(pm.Handler)
-
-	// add logging middleware
-	//r.Use(func(handler http.Handler) http.Handler {
-	//	return middleware.LoggingMiddleware(handler, l)
-	//})
-
-	//promMiddle := middleware.NewPrometheus(middleware.PromCfg{
-	//	MetricPrefix: "myApp",
-	//})
-	//r.Use(func(handler http.Handler) http.Handler {
-	//	return promMiddle.Handler(handler)
-	//})
+	hist := middleware.NewHistogram("", nil, nil)
+	r.Use(func(handler http.Handler) http.Handler {
+		return middleware.PromLogMiddleware(handler, hist, l)
+	})
 
 	// attach handlers
-	err := routes.ApiV0(r) // api/v0 routes
+	err := ApiV0(r) // api/v0 routes
 	if err != nil {
 		return nil, err
 	}

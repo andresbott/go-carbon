@@ -4,10 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"git.andresbott.com/Golang/carbon/libs/factory"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rs/zerolog"
-	"gorm.io/gorm"
 	"net"
 	"net/http"
 	"os"
@@ -18,19 +14,20 @@ import (
 
 type Server struct {
 	server    http.Server
-	obsServer *http.Server
-	logger    *zerolog.Logger
+	obsServer http.Server
+	logger    func(msg string, isErr bool)
 }
 
 type Cfg struct {
-	Addr    string
-	ObsAddr string
-	Logger  *zerolog.Logger
-	Db      *gorm.DB
+	Addr       string
+	Handler    http.Handler
+	ObsAddr    string
+	ObsHandler http.Handler
+	Logger     func(msg string, isErr bool)
 }
 
-// NewServer creates a new sever instance that can be started individually
-func NewServer(cfg Cfg) *Server {
+// New creates a new sever instance that can be started individually
+func New(cfg Cfg) *Server {
 
 	if cfg.Addr == "" {
 		cfg.Addr = ":8080"
@@ -39,26 +36,23 @@ func NewServer(cfg Cfg) *Server {
 		cfg.ObsAddr = ":9090"
 	}
 
-	if cfg.Logger == nil {
-		cfg.Logger = factory.SilentLogger()
-	}
-
-	handler, err := NewAppHandler(cfg.Logger, cfg.Db)
-	if err != nil {
-		panic(fmt.Sprintf("unable to initialize app: %v", err))
-	}
-
 	return &Server{
 		logger: cfg.Logger,
 		server: http.Server{
 			Addr:    cfg.Addr,
-			Handler: handler,
+			Handler: cfg.Handler,
 		},
 
-		obsServer: &http.Server{
+		obsServer: http.Server{
 			Addr:    cfg.ObsAddr,
-			Handler: obsHandler(),
+			Handler: cfg.ObsHandler,
 		},
+	}
+}
+
+func (srv *Server) logMsg(msg string, isErr bool) {
+	if srv.logger != nil {
+		srv.logger(msg, isErr)
 	}
 }
 
@@ -82,7 +76,7 @@ func (srv *Server) Start() error {
 		if err != nil {
 			panic(fmt.Sprintf("error starting obserbability server: %v", err))
 		}
-		srv.logger.Info().Msg(fmt.Sprintf("obserbability server started on: %s", srv.obsServer.Addr))
+		srv.logMsg(fmt.Sprintf("obserbability server started on: %s", srv.obsServer.Addr), false)
 
 		if err := srv.obsServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
 			panic(fmt.Sprintf("error in obserbability server: %v", err))
@@ -94,7 +88,7 @@ func (srv *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	srv.logger.Info().Msg(fmt.Sprintf("server started on: %s", srv.server.Addr))
+	srv.logMsg(fmt.Sprintf("server started on: %s", srv.server.Addr), false)
 
 	if err = srv.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -110,25 +104,12 @@ func (srv *Server) Stop() {
 	defer cancel()
 
 	if err := srv.server.Shutdown(ctx); err != nil {
-		srv.logger.Warn().Msg(fmt.Sprintf("server shutdown: %v", err))
+		srv.logMsg(fmt.Sprintf("server shutdown: %v", err), true)
 	}
-	srv.logger.Info().Msg("server stopped")
+	srv.logMsg("server stopped", false)
 
 	if err := srv.obsServer.Shutdown(ctx); err != nil {
-		srv.logger.Warn().Msg(fmt.Sprintf("obs server shutdown: %v", err))
+		srv.logMsg(fmt.Sprintf("observability server shutdown: %v", err), true)
 	}
-	srv.logger.Info().Msg("obs server stopped")
-}
-
-func obsHandler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		content := `
-<a href="/metrics">/metrics</a>
-`
-		_, _ = fmt.Fprint(writer, content)
-
-	})
-	mux.Handle("/metrics", promhttp.Handler())
-	return mux
+	srv.logMsg("observability  server stopped", false)
 }

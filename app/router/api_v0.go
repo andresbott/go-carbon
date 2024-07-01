@@ -1,8 +1,9 @@
-package routes
+package router
 
 import (
-	"git.andresbott.com/Golang/carbon/app/server/handlers"
+	"git.andresbott.com/Golang/carbon/app/handlers"
 	"git.andresbott.com/Golang/carbon/libs/auth"
+	handlers2 "git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
 	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/gorilla/mux"
@@ -15,7 +16,8 @@ func ApiV0(r *mux.Router) error {
 
 	apiRoute := r.PathPrefix("/api/v0").Subrouter()
 	r.Use(func(handler http.Handler) http.Handler {
-		return middleware.JsonErrMiddleware(handler)
+		// todo this should reflect prod vs non-prod property
+		return middleware.JsonErrMiddleware(handler, false)
 	})
 
 	store, err := auth.FsStore("", securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32))
@@ -36,7 +38,7 @@ func ApiV0(r *mux.Router) error {
 		},
 	}
 	apiRoute.Path("/user/login").Methods(http.MethodPost).Handler(handlers.UserLoginHandler(sessionAuth, users))
-	apiRoute.Path("/user/login").Handler(middleware.ErrorHandler(http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed))
+	apiRoute.Path("/user/login").Handler(handlers2.JsonErrorHandler(http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed))
 
 	return nil
 }

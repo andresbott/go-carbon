@@ -31,11 +31,22 @@ func DefaultLogger(lev Level, w io.Writer) *zerolog.Logger {
 	if w == nil {
 		w = os.Stdout
 	}
-
-	l := zerolog.New(w).With().Timestamp().Logger().Level(zerolog.Level(lev))
-
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout}
+	l := zerolog.New(consoleWriter).With().Timestamp().Logger().Level(zerolog.Level(lev))
 	return &l
 
+}
+
+func ConsoleFileOutput(file string) (zerolog.LevelWriter, error) {
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout}
+	if file != "" {
+		f, err := os.Create(file)
+		if err != nil {
+			return nil, err
+		}
+		return zerolog.MultiLevelWriter(consoleWriter, f), nil
+	}
+	return zerolog.MultiLevelWriter(consoleWriter), nil
 }
 
 // SilentLogger returns a Zerologger that does not write any output

@@ -38,8 +38,8 @@ func log(l *zerolog.Logger, r *http.Request, statusCode int, dur time.Duration) 
 			Str("url", r.RequestURI).
 			Dur("durations", dur).
 			Int("response-code", statusCode).
-			Str("user-agent", r.UserAgent()).
-			Str("referer", r.Referer()).
+			//Str("user-agent", r.UserAgent()).
+			//Str("referer", r.Referer()).
 			Str("ip", userIp(r)).
 			Str("req-id", r.Header.Get("Request-Id")).
 			Msg("")
