@@ -30,7 +30,7 @@ type Cfg struct {
 func New(cfg Cfg) *Server {
 
 	if cfg.Addr == "" {
-		cfg.Addr = ":8080"
+		cfg.Addr = ":8085"
 	}
 	if cfg.ObsAddr == "" {
 		cfg.ObsAddr = ":9090"

@@ -3,7 +3,11 @@
 
 
 ## problems to solve
-
+* add misddleware to write repsonse headers. e.g. cors during dev
+* keep me logged in is part of session management
+* add logout into session management
+* json error middlware to strip tailing \n
+* improve request loggger to print the error message
 * improve config
   * use a config file with env overrides (?)
 * session login store
@@ -29,4 +33,10 @@
 
 ## to be verified
 * make sure the user manager uses a salt when storing passwords
-* 
+
+
+##  DOC
+### Router
+notice that when instantiating subrouters e.g. r.PathPrefix("/basic").Subrouter() then the handler in the subrouter
+needs to be like 	"r.Path("").Handler(demoPage)" to handler http://localhost:8080/basic 
+iff you add "r.Path("/").Handler(demoPage)" the request needs to be http://localhost:8080/basic/

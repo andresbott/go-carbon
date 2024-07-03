@@ -3,18 +3,16 @@ PWD_DIR := ${CURDIR}
 
 default: help
 
-status: ## get info about the project
-	@echo "current commit: ${COMMIT_SHA_SHORT}"
-
-fmt: ## format go code and run mod tidy
-	@go fmt ./...
-	@go mod tidy
 
 test: ## run go tests
 	@go test ./... -v -cover
 
 lint: ## run go linter
 	@golangci-lint run
+
+fmt:
+	@go fmt ./...
+	@go mod tidy
 
 verify: fmt test benchmark lint ## run all verification and code structure tiers
 
@@ -36,7 +34,12 @@ build-ui:
 	export VITE_BASE="/ui" && \
 	npm run build
 
+
+
 build: build-ui package-ui ## build a static binary that includes the web ui
+
+docker-builder: ## build the docker image used to build the project
+	@docker build ./ -t carbon-builder -f zarf/Docker/build.Dockerfile
 
 swagger: swagger-build ## build and serve the swagger spec
 	@cd zarf/swagger && go run main.go

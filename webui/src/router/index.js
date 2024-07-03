@@ -4,8 +4,8 @@ import AppLayout from '@/layout/AppLayout.vue';
 
 
 const router = createRouter({
-  // history: createWebHistory(process.env.VITE_BASE || ''),
-  history: createWebHistory(),
+  // history: createWebHistory(),
+  history: createWebHistory("/spa"),
   routes: [
     {
       path: '/',

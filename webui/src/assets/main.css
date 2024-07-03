@@ -1,2 +1,5 @@
 @import './base.css';
 
+.p-card,.p-inputgroup,.p-inputgroup-addon,.p-component{
+ border-radius:1px;
+}

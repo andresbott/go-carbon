@@ -3,9 +3,7 @@ package router
 import (
 	_ "embed"
 	"git.andresbott.com/Golang/carbon/app/spa"
-	"git.andresbott.com/Golang/carbon/internal/http/userhandler"
 	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
 	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/gorilla/mux"
@@ -36,16 +34,11 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 
 	r := mux.NewRouter()
 
+	// add observability
 	hist := middleware.NewHistogram("", nil, nil)
 	r.Use(func(handler http.Handler) http.Handler {
 		return middleware.PromLogMiddleware(handler, hist, l)
 	})
-
-	// attach handlers
-	err := ApiV0(r) // api/v0 routes
-	if err != nil {
-		return nil, err
-	}
 
 	// static demos users
 	demoUsers := user.StaticUsers{
@@ -53,81 +46,76 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 			"demo": "demo",
 		},
 	}
-
-	// use session auth
-	//err = handlers2.sessionAuthentication(r, demoUsers)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	// user management
+	// session based auth
 	// --------------------------
-	// db managed users
-	sampleDbUser, err := sampleUserManager()
-	if err != nil {
-		return nil, err
-	}
-
-	userDbHandler, err := userhandler.NewHandler(sampleDbUser)
-	if err != nil {
-		return nil, err
-	}
-	r.PathPrefix("/user").Handler(userDbHandler.UserHandler("/user"))
-
-	// root page
-	// --------------------------
-	demoPage := handlers.SimpleText{
-		Text: "root page",
-		Links: []handlers.Link{
-			{
-				Text: "Basic auth protected (demo:demo)",
-				Url:  "/basic",
-			},
-			{
-				Text: "Basic auth protected using DB demoUsers (test@mail.com:1234)",
-				Url:  "/basic-auth-db",
-			},
-			//{
-			//	Text: "session based protected page",
-			//	Url:  handlers2.sessionContent,
-			//},
-			//{
-			//	Text: "session based login (demo:demo)",
-			//	Url:  handlers2.sessionLogin,
-			//},
-			{
-				Text: "User handling",
-				Url:  "/user",
-			},
-		},
-	}
-	r.Path("/demo").Handler(&demoPage)
-
-	// SPA starts here: ====================================================
-
 	hashKey := []byte("oach9iu2uavahcheephi4FahzaeNge8yeecie4jee9rah9ahrah6tithai7Oow5U")
 	blockKey := []byte("eeth3oon5eewifaogeibieShey5eiJ0E")
 
-	sessStor, err := auth.FsStore("", hashKey, blockKey)
+	//cookieStore, err := auth.CookieStore(hashKey, blockKey)
+	cookieStore, err := auth.FsStore("", hashKey, blockKey)
 	if err != nil {
 		return nil, err
 	}
 
 	sessionAuth, err := auth.NewSessionMgr(auth.SessionCfg{
-		Store: sessStor,
+		Store: cookieStore,
 	})
-
-	loginHandler := auth.JsonAuthHandler(sessionAuth, demoUsers)
-	r.Path("/login").Methods(http.MethodPost).Handler(loginHandler)
-
-	// load the SPA page
-	spaHandler, err := spa.NewCarbonSpa("/")
 	if err != nil {
 		return nil, err
 	}
-	_ = spaHandler
 
-	r.Methods(http.MethodGet).PathPrefix("/").Handler(spaHandler)
+	// attach API v0 handlers
+	err = apiV0(r.PathPrefix("/api/v0").Subrouter(), sessionAuth, demoUsers) // api/v0 routes
+	if err != nil {
+		return nil, err
+	}
+
+	// attach the basic auth handler
+	err = basicAuthProtected(r.PathPrefix("/basic").Subrouter(), demoUsers) // api/v0 routes
+	if err != nil {
+		return nil, err
+	}
+
+	// attach spa handler
+	// if you want to serve the spa from the root, pass "/" to the spa handler and the path prefix
+	// not that the SPA base and route needs to be adjusted accordingly
+	spaHandler, err := spa.NewCarbonSpa("/spa")
+	if err != nil {
+		return nil, err
+	}
+	r.Methods(http.MethodGet).PathPrefix("/spa").Handler(spaHandler)
+
+	// attach the demo handler on the root path
+	err = demo(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// use session auth
+	err = SessionProtected(r, sessionAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	// root page
+	// --------------------------
+
+	// SPA starts here: ====================================================
+
+	//hashKey := []byte("oach9iu2uavahcheephi4FahzaeNge8yeecie4jee9rah9ahrah6tithai7Oow5U")
+	//blockKey := []byte("eeth3oon5eewifaogeibieShey5eiJ0E")
+	//
+	//sessStor, err := auth.FsStore("", hashKey, blockKey)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//sessionAuth, err := auth.NewSessionMgr(auth.SessionCfg{
+	//	Store: sessStor,
+	//})
+	//
+	//loginHandler := auth.JsonAuthHandler(sessionAuth, demoUsers)
+	//r.Path("/login").Methods(http.MethodPost).Handler(loginHandler)
 
 	return &MyAppHandler{
 		router: r,

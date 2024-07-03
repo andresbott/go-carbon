@@ -11,18 +11,15 @@ import { ref } from 'vue';
 import {useUserStore} from "@/stores/user.js";
 const value = ref(null);
 
-
 const user = useUserStore()
-// user.bla()
-// user.login()
+
 
 const userRef = ref(null)
 const passRef = ref(null)
 
 
 const load = () => {
-
-  user.bla(userRef.value,passRef.value)
+  user.login(userRef.value,passRef.value)
 };
 
 
@@ -33,21 +30,21 @@ const load = () => {
   <Card>
     <template #title>Log in</template>
     <template #content>
+      <div class="flex flex-column items-center gap-4">
+
       <InputGroup>
         <InputGroupAddon>
           <i class="pi pi-user"></i>
         </InputGroupAddon>
-        <InputText placeholder="Username" v-model="userRef" />
+        <InputText placeholder="Username" v-on:keyup.enter="load" v-model="userRef" />
       </InputGroup>
+
       <InputGroup>
         <InputGroupAddon>
           <i class="pi pi-lock"></i>
         </InputGroupAddon>
-        <Password v-model="passRef" placeholder="Password" :feedback="false" toggleMask />
+        <Password v-model="passRef" v-on:keyup.enter="load" placeholder="Password" :feedback="false" toggleMask />
       </InputGroup>
-    </template>
-    <template #footer>
-      <div class="flex gap-3 mt-1">
         <Button label="Log in" class="w-full" @click="load" />
       </div>
     </template>

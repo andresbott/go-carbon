@@ -14,6 +14,7 @@ type StatWriter struct {
 	statusCode    int
 	interceptBody bool // write a limited amount of chars into a buffer in case a non 200 code
 	buf           limitedbuffer.Buffer
+	headerWritten bool // only write header once
 }
 
 // NewWriter will return a pointer to a response writer
@@ -51,8 +52,11 @@ func (r *StatWriter) Write(b []byte) (int, error) {
 
 // WriteHeader writes the response status code and stores it internally
 func (r *StatWriter) WriteHeader(code int) {
-	r.statusCode = code
-	r.ResponseWriter.WriteHeader(code)
+	if !r.headerWritten {
+		r.ResponseWriter.WriteHeader(code)
+		r.statusCode = code
+		r.headerWritten = true
+	}
 }
 
 func IsStatusError(statusCode int) bool {

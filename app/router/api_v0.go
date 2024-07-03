@@ -1,44 +1,55 @@
 package router
 
 import (
-	"git.andresbott.com/Golang/carbon/app/handlers"
+	"git.andresbott.com/Golang/carbon/app/handlrs"
 	"git.andresbott.com/Golang/carbon/libs/auth"
-	handlers2 "git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
-	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/securecookie"
 	"net/http"
-	"time"
 )
 
-func ApiV0(r *mux.Router) error {
+func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin) error {
 
-	apiRoute := r.PathPrefix("/api/v0").Subrouter()
 	r.Use(func(handler http.Handler) http.Handler {
 		// todo this should reflect prod vs non-prod property
 		return middleware.JsonErrMiddleware(handler, false)
 	})
-
-	store, err := auth.FsStore("", securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32))
+	// add users handling to api
+	err := apiV0User(r, session, users)
 	if err != nil {
 		return err
 	}
-	// create an instance of session auth
-	sessionAuth, _ := auth.NewSessionMgr(auth.SessionCfg{
-		Store:         store,
-		SessionDur:    time.Hour,       // time the user is logged in
-		MaxSessionDur: 24 * time.Hour,  // time after the user is forced to re-login anyway
-		MinWriteSpace: 2 * time.Minute, // throttle write operations on the session
-	})
+	return nil
+}
 
-	users := user.StaticUsers{
-		Users: map[string]string{
-			"demo": "demo",
-		},
-	}
-	apiRoute.Path("/user/login").Methods(http.MethodPost).Handler(handlers.UserLoginHandler(sessionAuth, users))
-	apiRoute.Path("/user/login").Handler(handlers2.JsonErrorHandler(http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed))
+func apiV0User(apiRoute *mux.Router, session *auth.SessionMgr, users auth.UserLogin) error {
+	apiRoute.Path("/user/status").Methods(http.MethodGet).Handler(handlrs.UserStatusHandler(session))
+	apiRoute.Path("/user/status").Handler(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Error(writer, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}))
+
+	apiRoute.Path("/user/options").Methods(http.MethodGet).Handler(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Error(writer, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+	}))
+	apiRoute.Path("/user/options").Handler(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Error(writer, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}))
+
+	apiRoute.Path("/user/login").Methods(http.MethodPost).Handler(handlrs.UserLoginHandler(session, users))
+	apiRoute.Path("/user/login").Methods(http.MethodOptions).Handler(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+
+		// TODO either move to middleware or other type of control mechanisms
+		headers := writer.Header()
+		headers.Add("Access-Control-Allow-Origin", "*")
+		headers.Add("Vary", "Origin")
+		headers.Add("Vary", "Access-Control-Request-Method")
+		headers.Add("Vary", "Access-Control-Request-Headers")
+		headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token")
+		headers.Add("Access-Control-Allow-Methods", "GET, POST,OPTIONS")
+	}))
+	apiRoute.Path("/user/login").Handler(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Error(writer, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}))
 
 	return nil
 }
