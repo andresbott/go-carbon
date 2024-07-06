@@ -6,11 +6,6 @@ import (
 	"net/http"
 )
 
-type loginData struct {
-	User string `json:"user"`
-	Pw   string `json:"password"`
-}
-
 //type UserHandler struct {
 //	user    auth.UserLogin
 //	session *auth.SessionMgr
@@ -41,6 +36,11 @@ type loginData struct {
 //
 //}
 
+type loginData struct {
+	User string `json:"user"`
+	Pw   string `json:"password"`
+}
+
 type userStatus struct {
 	User     string `json:"user"`
 	LoggedIn bool   `json:"logged-in"`
@@ -48,10 +48,6 @@ type userStatus struct {
 
 func UserStatusHandler(session *auth.SessionMgr) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		// TODO remove this
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-
 		w.Header().Set("Content-Type", "application/json")
 
 		data, err := session.Read(r)
@@ -71,12 +67,33 @@ func UserStatusHandler(session *auth.SessionMgr) http.Handler {
 
 	})
 }
+func UserLogoutHandler(session *auth.SessionMgr) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		err := session.Logout(r, w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		jsonData := userStatus{
+			User:     "",
+			LoggedIn: false,
+		}
+
+		err = json.NewEncoder(w).Encode(jsonData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+	})
+}
 
 func UserLoginHandler(session *auth.SessionMgr, user auth.UserLogin) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload loginData
-		// TODO move to another place
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// TODO remove
+		//time.Sleep(1 * time.Second)
 
 		err := json.NewDecoder(r.Body).Decode(&payload)
 		if err != nil {
@@ -88,6 +105,17 @@ func UserLoginHandler(session *auth.SessionMgr, user auth.UserLogin) http.Handle
 			err = session.Login(r, w, payload.User)
 			if err != nil {
 				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			// todo read user data...
+			jsonData := userStatus{
+				User:     payload.User,
+				LoggedIn: true,
+			}
+			err = json.NewEncoder(w).Encode(jsonData)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 		} else {

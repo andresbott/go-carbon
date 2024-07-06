@@ -4,17 +4,11 @@
   </div>
 
   <vertical>
-    <template v-slot:header>
-     head
-    </template>
+    <template v-slot:header> head </template>
 
-404
+    404
 
-
-    <template v-slot:footer>
-      footer
-    </template>
-
+    <template v-slot:footer> footer </template>
   </vertical>
 </template>
 
@@ -28,5 +22,5 @@
 }
 </style>
 <script setup>
-import Vertical from "@/components/legos/Vertical.vue";
+import Vertical from '@/components/legos/Vertical.vue'
 </script>

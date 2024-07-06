@@ -4,6 +4,17 @@
 
 ## problems to solve
 * add misddleware to write repsonse headers. e.g. cors during dev
+  * 		// TODO either move to middleware or other type of control mechanisms
+    	headers := writer.Header()
+    	headers.Add("Access-Control-Allow-Origin", "*")
+    	headers.Add("Vary", "Origin")
+    	headers.Add("Vary", "Access-Control-Request-Method")
+    	headers.Add("Vary", "Access-Control-Request-Headers")
+    	headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token")
+    	headers.Add("Access-Control-Allow-Methods", "GET, POST,OPTIONS")
+* set expiration of session cookie to the overall expiration
+  * handle overall expiration with cookie expiration instead of using own mchanism? 
+  * check Options.MaxAge of the session is <= 0
 * keep me logged in is part of session management
 * add logout into session management
 * json error middlware to strip tailing \n

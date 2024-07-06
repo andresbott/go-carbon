@@ -140,6 +140,18 @@ func (auth *SessionMgr) Login(r *http.Request, w http.ResponseWriter, user strin
 	return auth.write(r, w, session, authData)
 }
 
+// Logout is a convenience function to logout the current user
+func (auth *SessionMgr) Logout(r *http.Request, w http.ResponseWriter) error {
+	authData := SessionData{
+		IsAuthenticated: false,
+	}
+	session, err := auth.store.Get(r, SessionName)
+	if err != nil {
+		return err
+	}
+	return auth.write(r, w, session, authData)
+}
+
 // the Write public function is commented out for now, until it might be needed to not blow the API
 // Use Login() instead
 //func (auth *SessionMgr) Write(r *http.Request, w http.ResponseWriter, data SessionData) ( error) {

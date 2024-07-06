@@ -44,10 +44,11 @@ docker-builder: ## build the docker image used to build the project
 swagger: swagger-build ## build and serve the swagger spec
 	@cd zarf/swagger && go run main.go
 
-# this uses https://goswagger.io/go-swagger/
+# this uses https://github.com/swaggo/swag
 swagger-build: ## build the swagger spec
-	rm  zarf/swagger/swagger.json
-	swagger generate spec main.go > zarf/swagger/swagger.json
+	swag fmt
+	swag init -g app/router/api_v0.go -ot "json" -o zarf/swagger/
+
 
 help: ## help command
 	@egrep '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST)  | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

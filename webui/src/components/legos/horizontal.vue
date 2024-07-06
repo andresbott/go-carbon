@@ -11,27 +11,26 @@
     <div class="c-right">
       <slot name="right"></slot>
     </div>
-
   </div>
 </template>
 
 <script setup>
 defineProps({
-  centerContent:  {
+  centerContent: {
     type: Boolean,
     default: false
-  }})
+  }
+})
 </script>
 
 <style>
 .c-horizontal {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  width:100%;
+  width: 100%;
 }
-.c-horizontal>.c-main.h-center {
+.c-horizontal > .c-main.h-center {
   display: grid;
   place-items: normal center;
 }
-
 </style>

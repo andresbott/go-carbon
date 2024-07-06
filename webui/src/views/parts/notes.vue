@@ -8,9 +8,7 @@ import UserLogin from '@/components/UserLogin.vue'
   <vertical :center-content="true">
     <template v-slot:main>
       <horizontal :center-content="true">
-        <template v-slot:default>
-          <UserLogin />
-        </template>
+        <template v-slot:default> Notes App goes here </template>
       </horizontal>
     </template>
 
