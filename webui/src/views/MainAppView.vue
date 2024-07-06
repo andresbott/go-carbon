@@ -2,7 +2,7 @@
 import Vertical from '@/components/legos/Vertical.vue'
 import Horizontal from '@/components/legos/horizontal.vue'
 import TopBar from '@/views/parts/topbar.vue'
-import {useUserStore} from "@/stores/user.js";
+import { useUserStore } from '@/stores/user.js'
 
 const user = useUserStore()
 console.log(user.banana)

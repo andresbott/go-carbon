@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainAppView from '@/views/MainAppView.vue'
 import { useUserStore } from '@/stores/user.js'
-import {ref} from "vue";
+import { ref } from 'vue'
 // import process from "eslint-plugin-vue/lib/configs/base.js";
 
-let firstLoad =true
+let firstLoad = true
 
 const router = createRouter({
   // history: createWebHistory(),
@@ -86,11 +86,11 @@ router.beforeEach((to, from, next) => {
 
 router.beforeEach((to, from, next) => {
   const user = useUserStore()
-  if (firstLoad){
+  if (firstLoad) {
     firstLoad = false
     user.checkState()
   }
-  next();
+  next()
 })
 
 export default router

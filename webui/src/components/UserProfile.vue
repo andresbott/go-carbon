@@ -4,14 +4,12 @@ import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
 const user = useUserStore()
 import { ref } from 'vue'
-import {useUserStore} from "@/stores/user.js";
+import { useUserStore } from '@/stores/user.js'
 const visible = ref(false)
 
 const logOut = () => {
   user.logout()
 }
-
-
 </script>
 <template>
   <Avatar
@@ -28,7 +26,7 @@ const logOut = () => {
       class="mr-3"
       size="xlarge"
       @click="visible = true"
-      style="background-color: #ece9fc; color: #2a1261;"
+      style="background-color: #ece9fc; color: #2a1261"
     />
 
     <p>TODO make to look more like github</p>
