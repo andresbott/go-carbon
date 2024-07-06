@@ -12,11 +12,12 @@ type SimpleText struct {
 	Links []Link
 }
 type Link struct {
-	Text string
-	Url  string
+	Text  string
+	Url   string
+	Child []Link
 }
 
-func (h *SimpleText) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h SimpleText) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", " text/html")
 	if r.Method == http.MethodGet {
@@ -26,15 +27,9 @@ func (h *SimpleText) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.WriteString("GET: " + h.Text)
 
 		if len(h.Links) > 0 {
-			s.WriteString("<ul>")
-			for _, link := range h.Links {
-				s.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>", link.Url, link.Text))
-			}
-			s.WriteString("</ul>")
+			writeRec(&s, h.Links)
 		}
-
 		fmt.Fprint(w, s.String())
-
 		return
 	}
 
@@ -42,6 +37,25 @@ func (h *SimpleText) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "POST: %s", h.Text)
 		return
 	}
-
 	http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+}
+
+func writeRec(s *strings.Builder, links []Link) {
+	s.WriteString("<ul>")
+	for _, link := range links {
+		if link.Url == "" {
+			s.WriteString(fmt.Sprintf("<li>%s", link.Text))
+			if len(link.Child) > 0 {
+				writeRec(s, link.Child)
+			}
+			s.WriteString("</li>")
+		} else {
+			s.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a>", link.Url, link.Text))
+			if len(link.Child) > 0 {
+				writeRec(s, link.Child)
+			}
+			s.WriteString("</li>")
+		}
+	}
+	s.WriteString("</ul>")
 }

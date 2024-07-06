@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"os"
 )
 
@@ -32,4 +35,20 @@ func newRootCommand() *cobra.Command {
 	)
 
 	return cmd
+}
+
+// for now only as a placeholder
+func callViper() {
+
+	// using standard library "flag" package
+	flag.Int("flagname", 1234, "help message for flagname")
+
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
+
+	i := viper.GetInt("flagname") // retrieve value from viper
+	_ = i
+
+	// ...
 }
