@@ -1,0 +1,9 @@
+* read config dirs
+* user space config in .config
+    * write
+* defaulf config lccation
+* write to location
+* dont fail if not config is provided ( option to make config file optional/mandatory)
+
+* in the options option to specifi a file as key value and have that loaded
+    e.g. to load a secret from file

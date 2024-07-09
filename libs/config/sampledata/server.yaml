@@ -1,0 +1,13 @@
+general:
+  port: 8080
+  log_level: info
+
+isDevMode: true
+
+plugins:
+  plugin1:
+    config1: value1
+    config2: 123
+  plugin2:
+    config1: value2
+    config2: 456

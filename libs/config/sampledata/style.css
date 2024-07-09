@@ -1,0 +1,14 @@
+#
+general:
+  my_key: "my value"
+
+Toplevel: banana
+SomeNumber: 123
+
+plugins:
+  plugin1:
+    config1: value1
+    config2: 123
+  plugin2:
+    config1: value2
+    config2: 456

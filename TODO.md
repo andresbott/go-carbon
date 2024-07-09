@@ -21,6 +21,7 @@
 * improve request loggger to print the error message
 * improve config
   * use a config file with env overrides (?)
+* rbac middleware
 * session login store
   * check suspicius logins, based on location / device ?
   * MFA
