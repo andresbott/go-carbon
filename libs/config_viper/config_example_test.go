@@ -1,8 +1,7 @@
-package config_test
+package config_viper_test
 
 import (
 	"fmt"
-	"git.andresbott.com/Golang/carbon/libs/config"
 	"os"
 )
 
@@ -12,7 +11,7 @@ func ExampleReadConfig() {
 	os.Setenv("EX_SOMENUMBER", "999")
 
 	// Load config from sample.yaml and set ENV variable refix to EX
-	cfg, _ := config.Read("./sampledata/sample.yaml", "EX")
+	cfg, _ := config_viper.Read("./sampledata/sample.yaml", "EX")
 
 	// read individual values
 	n := cfg.Viper().GetInt("SomeNumber")

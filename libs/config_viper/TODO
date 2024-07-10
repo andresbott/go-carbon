@@ -7,3 +7,10 @@
 
 * in the options option to specifi a file as key value and have that loaded
     e.g. to load a secret from file
+
+
+* why i dont use viper:
+ - not really possible to make a 12 factor confit to unmarshal
+ - not possible to unmarshal config sections
+ - does not support config.d pattern
+ - i wanted to add validation like required
