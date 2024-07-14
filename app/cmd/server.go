@@ -13,6 +13,7 @@ import (
 const dbFile = "carbon.db"
 
 func serverCmd() *cobra.Command {
+	var configFile = "./config.yaml"
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "start a web server",
@@ -57,6 +58,8 @@ func serverCmd() *cobra.Command {
 
 		},
 	}
+
+	cmd.Flags().StringVarP(&configFile, "config", "c", configFile, "config file")
 
 	return cmd
 

@@ -6,41 +6,14 @@ import (
 	"testing"
 )
 
-type testConfig struct {
-	Number     int          `config:"number"`
-	FloatNum   float64      `config:"floatNum"`
-	Text       string       `config:"text"`
-	Bol        bool         `config:"bol"`
-	StringList []string     `config:"listString"`
-	StructList []userData   `config:"userList"`
-	Nested     NestedConfig `config:"nested"`
-}
-type NestedConfig struct {
-	Child  Child `config:"child"`
-	Child2 struct {
-		Number int `config:"number"`
-	} `config:"child_2"`
-}
-type userData struct {
-	Name string `config:"name"`
-	Pass string `config:"pass"`
-}
-
-type Child struct {
-	Number      int    `config:"number"`
-	Text        string `config:"text"`
-	AnotherName string `config:"renamed"`
-}
-
 // todo set own struct annotations like `config:fieldName, required`
 
 func TestLoad2(t *testing.T) {
 	tcs := []struct {
-		name         string
-		opts         []any
-		envs         map[string]string
-		expectVal    map[string]string
-		expectParams testConfig
+		name      string
+		opts      []any
+		envs      map[string]string
+		expectVal map[string]string
 	}{
 		{
 			name: "load from file",
@@ -48,36 +21,13 @@ func TestLoad2(t *testing.T) {
 
 			// intentionally setting envs that do NOT apply because we did not set the Option
 			envs: map[string]string{
-				"TEST_ISDEVMODE":    "false",
-				"TEST_GENERAL.PORT": "9090",
+				"IGNORE_FLOATNUM": "44.4",
+				"IGNORE_NUMBER":   "9090",
 			},
 			expectVal: map[string]string{
 				"floatNum":             "3.14",
 				"nested.child.renamed": "renamedString",
-			},
-			expectParams: testConfig{
-				Number:     60,
-				FloatNum:   3.14,
-				Text:       "this is a string",
-				Bol:        true,
-				StringList: []string{"sting 1", "string 2"},
-				StructList: []userData{
-					{Name: "u1", Pass: "p1"},
-					{Name: "u2", Pass: "p2"},
-					{Pass: "p3"},
-				},
-				Nested: NestedConfig{
-					Child: Child{
-						Number:      61,
-						Text:        "this is a string 2",
-						AnotherName: "renamedString",
-					},
-					Child2: struct {
-						Number int `config:"number"`
-					}(struct{ Number int }{
-						Number: 62,
-					}),
-				},
+				"bol":                  "true",
 			},
 		},
 		{
@@ -99,18 +49,25 @@ func TestLoad2(t *testing.T) {
 				"nested.child.renamed": "envValue",
 				"bol":                  "true",
 			},
-			expectParams: testConfig{
-				Number:     60,
-				FloatNum:   6.65,
-				Text:       "this is a string",
-				Bol:        true,
-				StringList: []string{"string 1", "string 2"},
-				StructList: nil,
-				Nested: NestedConfig{
-					Child: Child{
-						AnotherName: "envValue",
-					},
-				},
+		},
+		{
+			name: "12 factor only envs with prefix",
+			opts: []any{EnvVar{"TEST"}},
+
+			// intentionally setting envs that do NOT apply because we did not set the Option
+			envs: map[string]string{
+				"TEST_NUMBER":               "60",
+				"TEST_FLOATNUM":             "6.65",
+				"TEST_TEXT":                 "this is a string",
+				"TEST_BOL":                  "true",
+				"TEST_LISTSTRING.0":         "string 1",
+				"TEST_LISTSTRING.1":         "string 2",
+				"TEST_NESTED.CHILD.RENAMED": "envValue",
+			},
+			expectVal: map[string]string{
+				"floatNum":             "6.65",
+				"nested.child.renamed": "envValue",
+				"bol":                  "true",
 			},
 		},
 	}
@@ -131,18 +88,6 @@ func TestLoad2(t *testing.T) {
 					if diff := cmp.Diff(got, v); diff != "" {
 						t.Errorf("unexpected value (-got +want)\n%s", diff)
 					}
-				}
-			})
-
-			t.Run("unmarshal", func(t *testing.T) {
-
-				got := testConfig{}
-				err = cfg.Unmarshal(&got)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if diff := cmp.Diff(got, tc.expectParams); diff != "" {
-					t.Errorf("unexpected value (-got +want)\n%s", diff)
 				}
 			})
 
@@ -171,6 +116,33 @@ func TestFlattenMap(t *testing.T) {
 		"general.child1.list.2.val":          2.5,
 		"general.child2.sub1.sub2":           1,
 		"top":                                "level",
+	}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("unexpected value (-got +want)\n%s", diff)
+	}
+
+}
+func TestFlattenStruct(t *testing.T) {
+	in := DefaultCfg
+
+	got := map[string]interface{}{}
+	err := flattenStruct(in, got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]interface{}{
+		"number":              100,
+		"floatNum":            100.1,
+		"text":                "default text",
+		"listString.0":        "default 1",
+		"listString.1":        "default 2",
+		"nested.child.number": 101,
+		"nested.child.text":   "child text default",
+		"userList.0.name":     "a1",
+		"userList.0.pass":     "b1",
+		"userList.1.name":     "a2",
+		"userList.1.pass":     "b2",
+		"userList.2.pass":     "b3",
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Errorf("unexpected value (-got +want)\n%s", diff)

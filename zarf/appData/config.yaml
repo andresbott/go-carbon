@@ -1,0 +1,10 @@
+main:
+  port: 8085
+  bindAddress: "*"
+
+observability:
+  port: 9090
+  bindAddress: "localhost"
+
+log:
+  level: "info"

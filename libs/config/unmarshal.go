@@ -64,7 +64,6 @@ func (c *Config) unmarshal(item reflect.Value, prefix string) (bool, error) {
 			}
 
 		case reflect.Slice:
-			// todo verify if slice was changed
 			ch, err := c.setSlice(valueField, fieldName)
 			if err != nil {
 				return changed, err
