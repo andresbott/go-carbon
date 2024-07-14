@@ -31,16 +31,15 @@ type EnvVar struct {
 type Config struct {
 	loadEnvs  bool
 	envPrefix string
-	data      map[string]interface{}
-	flatData  map[string]interface{}
+	flatData  map[string]any
 	subset    string
 }
 
 func Load(opts ...any) (*Config, error) {
 
 	c := Config{
-		data:     map[string]interface{}{},
-		flatData: map[string]interface{}{},
+		//data:     map[string]interface{}{},
+		flatData: map[string]any{},
 	}
 	// add cfg options into struct to control the order of precedence
 	type cfgLoader struct {
@@ -58,13 +57,15 @@ func Load(opts ...any) (*Config, error) {
 		case CfgDir:
 			spew.Dump("CfgDir")
 		case EnvVar:
-			spew.Dump("EnvVar")
+			c.loadEnvs = true
+			c.envPrefix = item.Prefix
 		case []any:
 			return nil, fmt.Errorf("wrong options payload: [][]any, only pass an array of options")
 
 		}
 	}
 
+	var data map[string]any
 	if cl.file != nil {
 		extType := fileType(cl.file.path)
 		if extType == ExtUnsupported {
@@ -75,22 +76,34 @@ func Load(opts ...any) (*Config, error) {
 			return nil, err
 		}
 
-		d, err := readCfgBytes(byt, extType)
+		data, err = readCfgBytes(byt, extType)
 		if err != nil {
 			return nil, err
 		}
-		c.data = d
 	}
-	flatten("", c.data, c.flatData)
+	flatten("", data, c.flatData)
+
 	return &c, nil
 }
 
-func (c *Config) GetString(key string) string {
-	val, ok := c.flatData[key]
+func (c *Config) GetString(fieldName string) string {
+	// check ENV firs
+	envName := fieldName
+	if c.envPrefix != "" {
+		envName = c.envPrefix + "_" + fieldName
+	}
+	envName = strings.ToUpper(envName)
+	envVal := os.Getenv(envName)
+	if c.loadEnvs && envVal != "" {
+		return envVal
+	}
+
+	val, ok := c.flatData[fieldName]
 	if ok {
 		switch val.(type) {
 		case map[string]interface{}:
 			return ""
+
 		case string:
 			return val.(string)
 		default:
@@ -98,7 +111,6 @@ func (c *Config) GetString(key string) string {
 		}
 	}
 	return ""
-
 }
 
 // Subset returns a config that only handles a subset of the overall config
@@ -107,19 +119,12 @@ func (c *Config) Subset(key string) *Config {
 		loadEnvs:  c.loadEnvs,
 		envPrefix: c.envPrefix,
 		subset:    c.subset + sep + key,
-		data:      c.data,
-		flatData:  c.flatData,
+		//data:      c.data,
+		flatData: c.flatData,
 	}
 
 	return &newC
 }
-
-func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
-	// todo this should merge 2 maps recursively
-	return nil
-}
-
-const sep = "."
 
 func flatten(prefix string, src map[string]interface{}, dest map[string]interface{}) {
 	// got from: https://stackoverflow.com/questions/64419565/how-to-efficiently-flatten-a-map
@@ -145,10 +150,13 @@ func flatten(prefix string, src map[string]interface{}, dest map[string]interfac
 	}
 }
 
-func readCfgBytes(bytes []byte, t string) (map[string]interface{}, error) {
-	var data map[string]interface{}
+// readCfgBytes takes a []byte, normally from reading a file, and will parse it's content depending
+// on the extension passed in ext
+// it returns a map[string]any
+func readCfgBytes(bytes []byte, ext string) (map[string]any, error) {
+	var data map[string]any
 
-	if t == ExtYaml {
+	if ext == ExtYaml {
 		err := yaml.Unmarshal(bytes, &data)
 		if err != nil {
 			return nil, err
@@ -156,7 +164,7 @@ func readCfgBytes(bytes []byte, t string) (map[string]interface{}, error) {
 		return data, nil
 	}
 
-	if t == ExtJson {
+	if ext == ExtJson {
 		err := json.Unmarshal(bytes, &data)
 		if err != nil {
 			return nil, err

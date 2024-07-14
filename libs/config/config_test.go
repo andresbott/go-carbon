@@ -1,32 +1,38 @@
 package config
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 	"os"
 	"testing"
 )
 
-func TestLoad(t *testing.T) {
-	c, err := Load(CfgFile{
-		path: "sampledata/server.yaml",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = c
-
-	spew.Dump(c.data)
+type testConfig struct {
+	Number     int          `config:"number"`
+	FloatNum   float64      `config:"floatNum"`
+	Text       string       `config:"text"`
+	Bol        bool         `config:"bol"`
+	StringList []string     `config:"listString"`
+	StructList []userData   `config:"userList"`
+	Nested     NestedConfig `config:"nested"`
+}
+type NestedConfig struct {
+	Child  Child `config:"child"`
+	Child2 struct {
+		Number int `config:"number"`
+	} `config:"child_2"`
+}
+type userData struct {
+	Name string `config:"name"`
+	Pass string `config:"pass"`
 }
 
-type serverCfg struct {
-	General serverGeneral
-	DevMode bool `mapstructure:"isDevMode" `
+type Child struct {
+	Number      int    `config:"number"`
+	Text        string `config:"text"`
+	AnotherName string `config:"renamed"`
 }
-type serverGeneral struct {
-	Port     int    `mapstructure:"port" validate:"required"`
-	LogLevel string `mapstructure:"log_level" `
-}
+
+// todo set own struct annotations like `config:fieldName, required`
 
 func TestLoad2(t *testing.T) {
 	tcs := []struct {
@@ -34,11 +40,11 @@ func TestLoad2(t *testing.T) {
 		opts         []any
 		envs         map[string]string
 		expectVal    map[string]string
-		expectParams serverCfg
+		expectParams testConfig
 	}{
 		{
 			name: "load from file",
-			opts: []any{CfgFile{"sampledata/server.yaml"}},
+			opts: []any{CfgFile{"sampledata/testSingleFile.yaml"}},
 
 			// intentionally setting envs that do NOT apply because we did not set the Option
 			envs: map[string]string{
@@ -46,15 +52,65 @@ func TestLoad2(t *testing.T) {
 				"TEST_GENERAL.PORT": "9090",
 			},
 			expectVal: map[string]string{
-				"isDevMode":    "true",
-				"general.port": "8080",
+				"floatNum":             "3.14",
+				"nested.child.renamed": "renamedString",
 			},
-			expectParams: serverCfg{
-				General: serverGeneral{
-					Port:     8080,
-					LogLevel: "info",
+			expectParams: testConfig{
+				Number:     60,
+				FloatNum:   3.14,
+				Text:       "this is a string",
+				Bol:        true,
+				StringList: []string{"sting 1", "string 2"},
+				StructList: []userData{
+					{Name: "u1", Pass: "p1"},
+					{Name: "u2", Pass: "p2"},
+					{Pass: "p3"},
 				},
-				DevMode: true,
+				Nested: NestedConfig{
+					Child: Child{
+						Number:      61,
+						Text:        "this is a string 2",
+						AnotherName: "renamedString",
+					},
+					Child2: struct {
+						Number int `config:"number"`
+					}(struct{ Number int }{
+						Number: 62,
+					}),
+				},
+			},
+		},
+		{
+			name: "12 factor only envs no prefix",
+			opts: []any{EnvVar{}},
+
+			// intentionally setting envs that do NOT apply because we did not set the Option
+			envs: map[string]string{
+				"NUMBER":               "60",
+				"FLOATNUM":             "6.65",
+				"TEXT":                 "this is a string",
+				"BOL":                  "true",
+				"LISTSTRING.0":         "string 1",
+				"LISTSTRING.1":         "string 2",
+				"NESTED.CHILD.RENAMED": "envValue",
+			},
+			expectVal: map[string]string{
+				"floatNum":             "6.65",
+				"nested.child.renamed": "envValue",
+				"bol":                  "true",
+			},
+			expectParams: testConfig{
+				Number:     60,
+				FloatNum:   6.65,
+				Text:       "this is a string",
+				Bol:        true,
+				StringList: []string{"string 1", "string 2"},
+				StructList: nil,
+				Nested: NestedConfig{
+					Child: Child{
+						AnotherName: "envValue",
+					},
+				},
 			},
 		},
 	}
@@ -78,17 +134,17 @@ func TestLoad2(t *testing.T) {
 				}
 			})
 
-			//t.Run("unmarshal", func(t *testing.T) {
-			//
-			//	got := serverCfg{}
-			//	err = cfg.Unmarshal(&got)
-			//	if err != nil {
-			//		t.Fatal(err)
-			//	}
-			//	if diff := cmp.Diff(got, tc.expectParams); diff != "" {
-			//		t.Errorf("unexpected value (-got +want)\n%s", diff)
-			//	}
-			//})
+			t.Run("unmarshal", func(t *testing.T) {
+
+				got := testConfig{}
+				err = cfg.Unmarshal(&got)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if diff := cmp.Diff(got, tc.expectParams); diff != "" {
+					t.Errorf("unexpected value (-got +want)\n%s", diff)
+				}
+			})
 
 		})
 	}
