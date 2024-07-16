@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"git.andresbott.com/Golang/carbon/app/router"
+	"git.andresbott.com/Golang/carbon/libs/config"
 	"git.andresbott.com/Golang/carbon/libs/factory"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/server"
@@ -20,15 +21,45 @@ func serverCmd() *cobra.Command {
 		Long:  "start a web server demonstrating the different features of the library",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			// ideally the command reads arguments, loads configuration
-			// and creates the server accordingly
-			// in this case the command is opinionated
+			type Msg struct {
+				level string
+				msg   string
+			}
+			configMsg := []Msg{}
 
+			cfg := appCfg{}
+			_, err := config.Load(
+				config.Defaults{Item: DefaultCfg},
+				config.EnvVar{Prefix: "CARBON"},
+				config.Unmarshal{Item: &cfg},
+				config.Writer{Fn: func(level, msg string) {
+					if level == config.InfoLevel {
+						configMsg = append(configMsg, Msg{level: "info", msg: msg})
+					}
+					if level == config.DebugLevel {
+						configMsg = append(configMsg, Msg{level: "debug", msg: msg})
+					}
+				}},
+			)
+			if err != nil {
+				return err
+			}
+
+			// setup the logger
 			logOutput, err := factory.ConsoleFileOutput("")
 			if err != nil {
 				return err
 			}
-			l := factory.DefaultLogger(factory.InfoLevel, logOutput)
+			l := factory.DefaultLogger(factory.GetLogLevel(cfg.Log.Level), logOutput)
+
+			// print config messages delayed
+			for _, m := range configMsg {
+				if m.level == "info" {
+					l.Info().Str("component", "config").Msg(m.msg)
+				} else {
+					l.Debug().Str("component", "config").Msg(m.msg)
+				}
+			}
 
 			db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
 				//Logger: zeroGorm.New(l.ZeroLog, zeroGorm.Cfg{IgnoreRecordNotFoundError: true}),
@@ -42,17 +73,23 @@ func serverCmd() *cobra.Command {
 				return err
 			}
 
-			s := server.New(server.Cfg{
+			s, err := server.New(server.Cfg{
+				Addr:       cfg.Main.Addr(),
 				Handler:    rootHandler,
+				SkipObs:    false,
+				ObsAddr:    cfg.Obs.Addr(),
 				ObsHandler: handlers.Observability(),
 				Logger: func(msg string, isErr bool) {
 					if isErr {
-						l.Warn().Msg(msg)
+						l.Warn().Str("component", "server").Msg(msg)
 					} else {
-						l.Info().Msg(msg)
+						l.Info().Str("component", "server").Msg(msg)
 					}
 				},
 			})
+			if err != nil {
+				return err
+			}
 
 			return s.Start()
 

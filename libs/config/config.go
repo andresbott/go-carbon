@@ -12,33 +12,12 @@ import (
 	"strings"
 )
 
-// Defaults enables to provide a set of default values to the configuration
-type Defaults struct {
-	item any
-}
-
-// CfgFile enables config to be loaded from a single file
-type CfgFile struct {
-	path string
-}
-
-// CfgDir enables config to be loaded from a conf.d directory,
-// note that directory values will take precedence over single file
-type CfgDir struct {
-	path string
-}
-
-// EnvVar enables to load config using an env vars
-// note that Envs will take precedence over file persisted values
-type EnvVar struct {
-	Prefix string
-}
-
 type Config struct {
 	loadEnvs  bool
 	envPrefix string
 	flatData  map[string]any
 	subset    string
+	writter   func(level, msg string)
 }
 
 func Load(opts ...any) (*Config, error) {
@@ -47,13 +26,113 @@ func Load(opts ...any) (*Config, error) {
 		//data:     map[string]interface{}{},
 		flatData: map[string]any{},
 	}
-	// add cfg options into struct to control the order of precedence
-	type cfgLoader struct {
-		def  *Defaults
-		file *CfgFile
-		dir  *CfgDir
-		env  *EnvVar
+	cl, err := newCfgLoader(opts)
+	if err != nil {
+		return nil, err
 	}
+	// set writer
+	if cl.writer != nil {
+		c.writter = cl.writer.Fn
+	}
+
+	// load defaults
+	if cl.def != nil {
+		c.info("loading default values")
+		err := flattenStruct(cl.def.Item, c.flatData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// enable envs
+	if cl.env != nil {
+		c.info(fmt.Sprintf("using ENVS with prefix \"%s\"", cl.env.Prefix))
+		c.envPrefix = cl.env.Prefix
+		c.loadEnvs = true
+	}
+
+	// load from file
+	if cl.file != nil {
+		extType := fileType(cl.file.Path)
+		if extType == ExtUnsupported {
+			return nil, fmt.Errorf("file %s is of unsuporeted type", cl.file.Path)
+		}
+		c.info(fmt.Sprintf("loading config from FILE: \"%s\"", cl.file.Path))
+		byt, err := os.ReadFile(cl.file.Path)
+		if err != nil {
+			return nil, err
+		}
+
+		data, err := readCfgBytes(byt, extType)
+		if err != nil {
+			return nil, err
+		}
+		flatten("", data, c.flatData)
+	}
+
+	// implicit unmarshal call
+	if cl.unmar != nil {
+		err := c.Unmarshal(cl.unmar.Item)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &c, nil
+}
+
+// Defaults enables to provide a set of default values to the configuration
+type Defaults struct {
+	Item any
+}
+
+// CfgFile enables config to be loaded from a single file
+type CfgFile struct {
+	Path string
+}
+
+// CfgDir enables config to be loaded from a conf.d directory,
+// note that directory values will take precedence over single file
+type CfgDir struct {
+	Path string
+}
+
+// EnvVar enables to load config using an env vars
+// note that Envs will take precedence over file persisted values
+type EnvVar struct {
+	Prefix string
+}
+
+// Unmarshal is an implicit call to unmarshal when calling the Load function
+// if you intend to simply load + unmarshal, with this item you can simplify
+// one function call
+type Unmarshal struct {
+	Item any
+}
+
+const (
+	InfoLevel  = "info"
+	DebugLevel = "debug"
+)
+
+// Writer allows to print information about what the config is doing
+// it will write two levels info and debug
+type Writer struct {
+	Fn func(level, msg string)
+}
+
+// cfgLoader holds references to options to control the order of precedence
+type cfgLoader struct {
+	def    *Defaults
+	file   *CfgFile
+	dir    *CfgDir
+	env    *EnvVar
+	writer *Writer
+	unmar  *Unmarshal
+}
+
+func newCfgLoader(opts []any) (cfgLoader, error) {
+
 	cl := cfgLoader{}
 
 	for _, opt := range opts {
@@ -66,65 +145,62 @@ func Load(opts ...any) (*Config, error) {
 			// TODO implemnt
 			spew.Dump("CfgDir: TODO implement")
 		case EnvVar:
-			c.loadEnvs = true
-			c.envPrefix = item.Prefix
+			cl.env = &item
+		case Writer:
+			cl.writer = &item
+		case Unmarshal:
+			cl.unmar = &item
 		case []any:
-			return nil, fmt.Errorf("wrong options payload: [][]any, only pass an array of options")
+			return cl, fmt.Errorf("wrong options payload: [][]any, only pass an array of options")
 		}
 	}
-	// ====================
-	if cl.def != nil {
-		err := flattenStruct(cl.def.item, c.flatData)
-		if err != nil {
-			return nil, err
-		}
-	}
+	return cl, nil
 
-	if cl.file != nil {
-		extType := fileType(cl.file.path)
-		if extType == ExtUnsupported {
-			return nil, fmt.Errorf("file %s is of unsuporeted type", cl.file.path)
-		}
-		byt, err := os.ReadFile(cl.file.path)
-		if err != nil {
-			return nil, err
-		}
-
-		data, err := readCfgBytes(byt, extType)
-		if err != nil {
-			return nil, err
-		}
-		flatten("", data, c.flatData)
-	}
-
-	return &c, nil
 }
 
-func (c *Config) GetString(fieldName string) string {
+const envSep = "_"
+
+func (c *Config) GetString(fieldName string) (string, error) {
 	// check ENV firs
 	envName := fieldName
 	if c.envPrefix != "" {
 		envName = c.envPrefix + "_" + fieldName
 	}
+	envName = strings.ReplaceAll(envName, sep, envSep)
 	envName = strings.ToUpper(envName)
 	envVal := os.Getenv(envName)
+
 	if c.loadEnvs && envVal != "" {
-		return envVal
+		return c.fileOrString(envVal, fieldName)
 	}
 
 	val, ok := c.flatData[fieldName]
 	if ok {
 		switch val.(type) {
 		case map[string]interface{}:
-			return ""
-
+			return "", nil
 		case string:
-			return val.(string)
+			return c.fileOrString(val.(string), fieldName)
 		default:
-			return fmt.Sprintf("%v", val)
+			return fmt.Sprintf("%v", val), nil
 		}
 	}
-	return ""
+	return "", fmt.Errorf("config key not found")
+}
+
+// fileOrString checks if of a string is supposed to load a file if it starts with @
+// if so, it loads the file and returns the content otherwise it returns the original string
+func (c *Config) fileOrString(in, fieldName string) (string, error) {
+	if strings.HasPrefix(in, "@") {
+		p := strings.TrimPrefix(in, "@")
+		strVal, err := loadFileContent(p)
+		if err != nil {
+			return "", err
+		}
+		c.Debug(fmt.Sprintf("setting value of field \"%s\" from file content of: %s ", fieldName, p))
+		return strVal, nil
+	}
+	return in, nil
 }
 
 // Subset returns a config that only handles a subset of the overall config
@@ -138,6 +214,18 @@ func (c *Config) Subset(key string) *Config {
 	}
 
 	return &newC
+}
+
+func (c *Config) info(msg string) {
+	if c.writter != nil {
+		c.writter(InfoLevel, msg)
+	}
+}
+
+func (c *Config) Debug(msg string) {
+	if c.writter != nil {
+		c.writter(DebugLevel, msg)
+	}
 }
 
 // flatten takes a nested map[string]any and transforms it into a flat map[string]any, where the keys of the nested

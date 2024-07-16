@@ -12,6 +12,7 @@ import (
 // Unmarshal will recursively navigate the struct using reflection and populate the fields based on the
 // flattened config representation
 func (c *Config) Unmarshal(payload any) error {
+	c.info("unmarshalling config into struct")
 	_, err := c.unmarshal(reflect.ValueOf(payload), "")
 	if err != nil {
 		return err
@@ -118,6 +119,7 @@ func (c *Config) setValue(valueField reflect.Value, fieldName string) (bool, err
 	changed := false
 	if c.flatData[fieldName] != nil {
 		val = reflect.ValueOf(c.flatData[fieldName])
+		c.Debug(fmt.Sprintf("setting value of field \"%s\" from config", fieldName))
 		changed = true
 	}
 	// check ENV
@@ -125,6 +127,7 @@ func (c *Config) setValue(valueField reflect.Value, fieldName string) (bool, err
 	if c.envPrefix != "" {
 		envName = c.envPrefix + "_" + fieldName
 	}
+	envName = strings.ReplaceAll(envName, sep, envSep)
 	envName = strings.ToUpper(envName)
 	envVal := os.Getenv(envName)
 
@@ -137,15 +140,18 @@ func (c *Config) setValue(valueField reflect.Value, fieldName string) (bool, err
 			}
 			val = reflect.ValueOf(data)
 			changed = true
+			c.Debug(fmt.Sprintf("setting value of field \"%s\" from ENV", fieldName))
 		case reflect.Bool:
 			if slices.Contains(boolValues, envVal) {
 				val = reflect.ValueOf(true)
 				changed = true
+				c.Debug(fmt.Sprintf("setting value of field \"%s\" from ENV", fieldName))
 			}
 		case
 			reflect.String:
 			val = reflect.ValueOf(envVal)
 			changed = true
+			c.Debug(fmt.Sprintf("setting value of field \"%s\" from ENV", fieldName))
 		case
 			reflect.Float64:
 			data, err := strconv.ParseFloat(envVal, 64)
@@ -154,6 +160,7 @@ func (c *Config) setValue(valueField reflect.Value, fieldName string) (bool, err
 			}
 			val = reflect.ValueOf(data)
 			changed = true
+			c.Debug(fmt.Sprintf("setting value of field \"%s\" from ENV", fieldName))
 		case
 			reflect.Float32:
 			data, err := strconv.ParseFloat(envVal, 32)
@@ -162,16 +169,46 @@ func (c *Config) setValue(valueField reflect.Value, fieldName string) (bool, err
 			}
 			val = reflect.ValueOf(data)
 			changed = true
-
+			c.Debug(fmt.Sprintf("setting value of field \"%s\" from ENV", fieldName))
 		default:
-
+			c.Debug(fmt.Sprintf("NOT setting the value of \"%s\" becasue it is not a supported type", fieldName))
 		}
 	}
 
 	if changed {
-		valueField.Set(val)
+		// load file if string starts with @
+		if valueField.Kind() == reflect.String {
+			strVal, err := c.fileOrString(val.String(), fieldName)
+			if err != nil {
+				return changed, err
+			}
+			val = reflect.ValueOf(strVal)
+		}
+
+		fn := func() (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("reflect panniked while setting value to field: %s (probably unexported)", fieldName)
+				}
+			}()
+			valueField.Set(val)
+			return
+		}
+		err := fn()
+		if err != nil {
+			return changed, err
+		}
+
 	}
 	return changed, nil
+}
+
+func loadFileContent(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 // setSlice takes a single reflect.value of kind slice from a struct to be unmarshalled and sets the value of the slice

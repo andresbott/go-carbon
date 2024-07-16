@@ -6,13 +6,14 @@ import (
 )
 
 type testConfig struct {
-	Number     int          `config:"number"`
-	FloatNum   float64      `config:"floatNum"`
-	Text       string       `config:"text"`
-	Bol        bool         `config:"bol"`
-	StringList []string     `config:"listString"`
-	StructList []userData   `config:"userList"`
-	Nested     NestedConfig `config:"nested"`
+	Number      int          `config:"number"`
+	FloatNum    float64      `config:"floatNum"`
+	Text        string       `config:"text"`
+	FileContent string       `config:"fileContent"`
+	Bol         bool         `config:"bol"`
+	StringList  []string     `config:"listString"`
+	StructList  []userData   `config:"userList"`
+	Nested      NestedConfig `config:"nested"`
 }
 type NestedConfig struct {
 	Child  Child `config:"child"`
@@ -70,11 +71,12 @@ func TestUnmarshal(t *testing.T) {
 				"TEST_GENERAL.PORT": "9090",
 			},
 			expectParams: testConfig{
-				Number:     60,
-				FloatNum:   3.14,
-				Text:       "this is a string",
-				Bol:        true,
-				StringList: []string{"sting 1", "string 2"},
+				Number:      60,
+				FloatNum:    3.14,
+				Text:        "this is a string",
+				FileContent: "mysecret",
+				Bol:         true,
+				StringList:  []string{"sting 1", "string 2"},
 				StructList: []userData{
 					{Name: "u1", Pass: "p1"},
 					{Name: "u2", Pass: "p2"},
@@ -103,18 +105,20 @@ func TestUnmarshal(t *testing.T) {
 				"NUMBER":               "60",
 				"FLOATNUM":             "6.65",
 				"TEXT":                 "this is a string",
+				"FILECONTENT":          "@./sampledata/secretfile",
 				"BOL":                  "true",
-				"LISTSTRING.0":         "string 1",
-				"LISTSTRING.1":         "string 2",
-				"NESTED.CHILD.RENAMED": "envValue",
+				"LISTSTRING_0":         "string 1",
+				"LISTSTRING_1":         "string 2",
+				"NESTED_CHILD_RENAMED": "envValue",
 			},
 			expectParams: testConfig{
-				Number:     60,
-				FloatNum:   6.65,
-				Text:       "this is a string",
-				Bol:        true,
-				StringList: []string{"string 1", "string 2"},
-				StructList: nil,
+				Number:      60,
+				FloatNum:    6.65,
+				Text:        "this is a string",
+				FileContent: "mysecret",
+				Bol:         true,
+				StringList:  []string{"string 1", "string 2"},
+				StructList:  nil,
 				Nested: NestedConfig{
 					Child: Child{
 						AnotherName: "envValue",
@@ -131,18 +135,20 @@ func TestUnmarshal(t *testing.T) {
 				"TEST_NUMBER":               "60",
 				"TEST_FLOATNUM":             "6.65",
 				"TEST_TEXT":                 "this is a string",
+				"TEST_FILECONTENT":          "@./sampledata/secretfile",
 				"TEST_BOL":                  "true",
-				"TEST_LISTSTRING.0":         "string 1",
-				"TEST_LISTSTRING.1":         "string 2",
-				"TEST_NESTED.CHILD.RENAMED": "envValue",
+				"TEST_LISTSTRING_0":         "string 1",
+				"TEST_LISTSTRING_1":         "string 2",
+				"TEST_NESTED_CHILD_RENAMED": "envValue",
 			},
 			expectParams: testConfig{
-				Number:     60,
-				FloatNum:   6.65,
-				Text:       "this is a string",
-				Bol:        true,
-				StringList: []string{"string 1", "string 2"},
-				StructList: nil,
+				Number:      60,
+				FloatNum:    6.65,
+				Text:        "this is a string",
+				FileContent: "mysecret",
+				Bol:         true,
+				StringList:  []string{"string 1", "string 2"},
+				StructList:  nil,
 				Nested: NestedConfig{
 					Child: Child{
 						AnotherName: "envValue",

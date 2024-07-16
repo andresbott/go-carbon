@@ -8,7 +8,7 @@ import (
 
 // todo set own struct annotations like `config:fieldName, required`
 
-func TestLoad2(t *testing.T) {
+func TestLoad(t *testing.T) {
 	tcs := []struct {
 		name      string
 		opts      []any
@@ -28,6 +28,7 @@ func TestLoad2(t *testing.T) {
 				"floatNum":             "3.14",
 				"nested.child.renamed": "renamedString",
 				"bol":                  "true",
+				"fileContent":          "mysecret",
 			},
 		},
 		{
@@ -39,15 +40,18 @@ func TestLoad2(t *testing.T) {
 				"NUMBER":               "60",
 				"FLOATNUM":             "6.65",
 				"TEXT":                 "this is a string",
+				"FILECONTENT":          "@./sampledata/secretfile",
 				"BOL":                  "true",
-				"LISTSTRING.0":         "string 1",
-				"LISTSTRING.1":         "string 2",
-				"NESTED.CHILD.RENAMED": "envValue",
+				"LISTSTRING_0":         "string 1",
+				"LISTSTRING_1":         "string 2",
+				"NESTED_CHILD_RENAMED": "envValue",
 			},
 			expectVal: map[string]string{
 				"floatNum":             "6.65",
 				"nested.child.renamed": "envValue",
 				"bol":                  "true",
+				"liststring.0":         "string 1",
+				"fileContent":          "mysecret",
 			},
 		},
 		{
@@ -59,15 +63,17 @@ func TestLoad2(t *testing.T) {
 				"TEST_NUMBER":               "60",
 				"TEST_FLOATNUM":             "6.65",
 				"TEST_TEXT":                 "this is a string",
+				"TEST_FILECONTENT":          "@./sampledata/secretfile",
 				"TEST_BOL":                  "true",
-				"TEST_LISTSTRING.0":         "string 1",
-				"TEST_LISTSTRING.1":         "string 2",
-				"TEST_NESTED.CHILD.RENAMED": "envValue",
+				"TEST_LISTSTRING_0":         "string 1",
+				"TEST_LISTSTRING_1":         "string 2",
+				"TEST_NESTED_CHILD_RENAMED": "envValue",
 			},
 			expectVal: map[string]string{
 				"floatNum":             "6.65",
 				"nested.child.renamed": "envValue",
 				"bol":                  "true",
+				"fileContent":          "mysecret",
 			},
 		},
 	}
@@ -84,7 +90,10 @@ func TestLoad2(t *testing.T) {
 
 			t.Run("get values", func(t *testing.T) {
 				for k, v := range tc.expectVal {
-					got := cfg.GetString(k)
+					got, err := cfg.GetString(k)
+					if err != nil {
+						t.Fatal(err)
+					}
 					if diff := cmp.Diff(got, v); diff != "" {
 						t.Errorf("unexpected value (-got +want)\n%s", diff)
 					}

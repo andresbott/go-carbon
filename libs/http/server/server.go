@@ -21,22 +21,24 @@ type Server struct {
 type Cfg struct {
 	Addr       string
 	Handler    http.Handler
+	SkipObs    bool
 	ObsAddr    string
 	ObsHandler http.Handler
 	Logger     func(msg string, isErr bool)
 }
 
 // New creates a new sever instance that can be started individually
-func New(cfg Cfg) *Server {
+func New(cfg Cfg) (*Server, error) {
 
 	if cfg.Addr == "" {
-		cfg.Addr = ":8085"
+		return nil, fmt.Errorf("server address canot be empty")
+
 	}
-	if cfg.ObsAddr == "" {
-		cfg.ObsAddr = ":9090"
+	if cfg.SkipObs && cfg.ObsAddr == "" {
+		return nil, fmt.Errorf("obserbavility server address canot be empty")
 	}
 
-	return &Server{
+	s := Server{
 		logger: cfg.Logger,
 		server: http.Server{
 			Addr:    cfg.Addr,
@@ -48,6 +50,7 @@ func New(cfg Cfg) *Server {
 			Handler: cfg.ObsHandler,
 		},
 	}
+	return &s, nil
 }
 
 func (srv *Server) logMsg(msg string, isErr bool) {

@@ -2,6 +2,7 @@
 number: 60
 floatNum: 3.14
 text: this is a string
+fileContent: "@./sampledata/secretfile" # this should load the content of the file on path ./secretfile
 bol: true
 
 # couple of lists

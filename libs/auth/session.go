@@ -177,11 +177,17 @@ func (auth *SessionMgr) write(r *http.Request, w http.ResponseWriter, session *s
 	return nil
 }
 
+func (auth *SessionMgr) Read(r *http.Request) (SessionData, error) {
+	data, _, err := auth.read(r)
+	return data, err
+}
 func (auth *SessionMgr) read(r *http.Request) (SessionData, *sessions.Session, error) {
 	session, err := auth.store.Get(r, SessionName)
 	if err != nil {
+		// TODO find better solution to handle sessions when the FS store is gone but the client still has a session
 		return SessionData{}, nil, err
 	}
+
 	key := session.Values[sessionDataKey]
 	if key == nil {
 		return SessionData{}, nil, err
@@ -189,10 +195,6 @@ func (auth *SessionMgr) read(r *http.Request) (SessionData, *sessions.Session, e
 	authData := key.(SessionData)
 	authData.Process(auth.sessionDur)
 	return authData, session, err
-}
-func (auth *SessionMgr) Read(r *http.Request) (SessionData, error) {
-	data, _, err := auth.read(r)
-	return data, err
 }
 
 // ReadUpdate is used to read the session, and update the session expiry timestamp
