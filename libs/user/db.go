@@ -43,10 +43,10 @@ type userModel struct {
 }
 
 type User struct {
-	Name    string
-	Email   string
-	Pw      string
-	Enabled bool
+	Name    string `yaml:"name"`
+	Email   string `yaml:"email"`
+	Pw      string `yaml:"pw"`
+	Enabled bool   `yaml:"enabled"`
 }
 
 func (mng DbManager) Create(id string, pw string) error {
