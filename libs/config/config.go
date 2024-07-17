@@ -113,6 +113,7 @@ type Unmarshal struct {
 const (
 	InfoLevel  = "info"
 	DebugLevel = "debug"
+	WarnLevel  = "warn"
 )
 
 // Writer allows to print information about what the config is doing

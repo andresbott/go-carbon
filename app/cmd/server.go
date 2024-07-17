@@ -1,8 +1,9 @@
 package cmd
 
 import (
+	"git.andresbott.com/Golang/carbon/app/config"
 	"git.andresbott.com/Golang/carbon/app/router"
-	"git.andresbott.com/Golang/carbon/libs/config"
+	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/factory"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/server"
@@ -21,26 +22,7 @@ func serverCmd() *cobra.Command {
 		Long:  "start a web server demonstrating the different features of the library",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			type Msg struct {
-				level string
-				msg   string
-			}
-			configMsg := []Msg{}
-
-			cfg := appCfg{}
-			_, err := config.Load(
-				config.Defaults{Item: DefaultCfg},
-				config.EnvVar{Prefix: "CARBON"},
-				config.Unmarshal{Item: &cfg},
-				config.Writer{Fn: func(level, msg string) {
-					if level == config.InfoLevel {
-						configMsg = append(configMsg, Msg{level: "info", msg: msg})
-					}
-					if level == config.DebugLevel {
-						configMsg = append(configMsg, Msg{level: "debug", msg: msg})
-					}
-				}},
-			)
+			cfg, err := config.Get(configFile)
 			if err != nil {
 				return err
 			}
@@ -53,14 +35,15 @@ func serverCmd() *cobra.Command {
 			l := factory.DefaultLogger(factory.GetLogLevel(cfg.Log.Level), logOutput)
 
 			// print config messages delayed
-			for _, m := range configMsg {
-				if m.level == "info" {
-					l.Info().Str("component", "config").Msg(m.msg)
+			for _, m := range cfg.Msgs {
+				if m.Level == "info" {
+					l.Info().Str("component", "config").Msg(m.Msg)
 				} else {
-					l.Debug().Str("component", "config").Msg(m.msg)
+					l.Debug().Str("component", "config").Msg(m.Msg)
 				}
 			}
 
+			// initialize DB
 			db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
 				//Logger: zeroGorm.New(l.ZeroLog, zeroGorm.Cfg{IgnoreRecordNotFoundError: true}),
 			})
@@ -68,13 +51,32 @@ func serverCmd() *cobra.Command {
 				return err
 			}
 
-			rootHandler, err := router.NewAppHandler(l, db)
+			// session based auth
+			//cookieStore, err := auth.CookieStore(hashKey, blockKey)
+			cookieStore, err := auth.FsStore(cfg.Auth.SessionPath, []byte(cfg.Auth.HashKey), []byte(cfg.Auth.BlockKey))
+			if err != nil {
+				return err
+			}
+			sessionAuth, err := auth.NewSessionMgr(auth.SessionCfg{
+				Store: cookieStore,
+			})
+			if err != nil {
+				return err
+			}
+
+			// Main APApplication handler
+			appCfg := router.AppCfg{
+				Logger:      l,
+				Db:          db,
+				AuthSession: sessionAuth,
+			}
+			rootHandler, err := router.NewAppHandler(appCfg)
 			if err != nil {
 				return err
 			}
 
 			s, err := server.New(server.Cfg{
-				Addr:       cfg.Main.Addr(),
+				Addr:       cfg.Server.Addr(),
 				Handler:    rootHandler,
 				SkipObs:    false,
 				ObsAddr:    cfg.Obs.Addr(),

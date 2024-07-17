@@ -20,7 +20,7 @@ benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
 
 serve: ## start the GO service
-	@go run main.go start
+	@go run main.go start -c zarf/appData/config.yaml
 
 serve-ui: package-ui serve## build the UI and start the GO service
 
