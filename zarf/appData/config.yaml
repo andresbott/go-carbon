@@ -1,0 +1,15 @@
+Server:
+  Port: 8085
+  BindIp: "localhost"
+
+Observability:
+  Port: 9090
+  BindIp: "localhost"
+
+Auth:
+  SessionPath:  "zarf/appData/session"
+  HashKey:      "ohlae6aevaet3eagh9zoogshahmeeSha"
+  BlockKey:     "ahv5iRietaeth8oo"
+
+Log:
+  Level: "info"

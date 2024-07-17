@@ -21,12 +21,15 @@
 * improve request loggger to print the error message
 * improve config
   * use a config file with env overrides (?)
+* rbac middleware
 * session login store
   * check suspicius logins, based on location / device ?
   * MFA
   * logout
   * wrong login attempts, to greylist or blacklist
 * Add UI testing using ROD on the spa package
+* Write Integration test for the handlers, e.g. login flow
+* write API key authentication handler
   
 + change the log middleware to intercept reponse error messages and replace them with generic errors in prod envs
   + this way all the handlers can write specific errors into the response, but the middleware makes sure taht they are not leaked

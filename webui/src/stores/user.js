@@ -10,7 +10,7 @@ export const useUserStore = defineStore('user', {
     _error: '',
     _loading: false,
     _wrongPw: false,
-    _banana: "default",
+    _banana: 'default'
   }),
   getters: {
     isLoggedIn(state) {
@@ -19,8 +19,7 @@ export const useUserStore = defineStore('user', {
     userName: (state) => state._user,
     loading: (state) => state._loading,
     wrongPw: (state) => state._wrongPw,
-    banana: (state) => state._banana,
-
+    banana: (state) => state._banana
   },
   actions: {
     async checkState() {
@@ -34,7 +33,7 @@ export const useUserStore = defineStore('user', {
           console.log(res.data)
           if (res.status === 200) {
             this._user = res.data.user
-            this._isLoggedIn = res.data["logged-in"]
+            this._isLoggedIn = res.data['logged-in']
           } else {
             console.log('err')
             console.log(res)
@@ -53,19 +52,19 @@ export const useUserStore = defineStore('user', {
 
       this._loading = true
       axios
-          .post(endpoint, "")
-          .then((res) => {
-              this._user = ""
-              this._isLoggedIn = false
-              router.push('/login')
-          }         )
-          .catch((err) => {
-            console.log(err)
-            // todo propagate login error
-          })
-          .finally(() => {
-            this._loading = false
-          })
+        .post(endpoint, '')
+        .then((res) => {
+          this._user = ''
+          this._isLoggedIn = false
+          router.push('/login')
+        })
+        .catch((err) => {
+          console.log(err)
+          // todo propagate login error
+        })
+        .finally(() => {
+          this._loading = false
+        })
     },
 
     // USER LOGIN

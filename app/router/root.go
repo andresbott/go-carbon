@@ -29,15 +29,21 @@ func (h *MyAppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //  go: embed ../handlers/tmpl/loginForm.html
 //var loginForm string
 
+type AppCfg struct {
+	Logger      *zerolog.Logger
+	Db          *gorm.DB
+	AuthSession *auth.SessionMgr
+}
+
 // NewAppHandler generates the main url router handler to be used in the server
-func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
+func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 
 	r := mux.NewRouter()
 
 	// add observability
 	hist := middleware.NewHistogram("", nil, nil)
 	r.Use(func(handler http.Handler) http.Handler {
-		return middleware.PromLogMiddleware(handler, hist, l)
+		return middleware.PromLogMiddleware(handler, hist, cfg.Logger)
 	})
 
 	// static demos users
@@ -46,26 +52,9 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 			"demo": "demo",
 		},
 	}
-	// session based auth
-	// --------------------------
-	hashKey := []byte("oach9iu2uavahcheephi4FahzaeNge8yeecie4jee9rah9ahrah6tithai7Oow5U")
-	blockKey := []byte("eeth3oon5eewifaogeibieShey5eiJ0E")
-
-	//cookieStore, err := auth.CookieStore(hashKey, blockKey)
-	cookieStore, err := auth.FsStore("", hashKey, blockKey)
-	if err != nil {
-		return nil, err
-	}
-
-	sessionAuth, err := auth.NewSessionMgr(auth.SessionCfg{
-		Store: cookieStore,
-	})
-	if err != nil {
-		return nil, err
-	}
 
 	// attach API v0 handlers
-	err = apiV0(r.PathPrefix("/api/v0").Subrouter(), sessionAuth, demoUsers) // api/v0 routes
+	err := apiV0(r.PathPrefix("/api/v0").Subrouter(), cfg.AuthSession, demoUsers) // api/v0 routes
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +81,7 @@ func NewAppHandler(l *zerolog.Logger, db *gorm.DB) (*MyAppHandler, error) {
 	}
 
 	// use session auth
-	err = SessionProtected(r, sessionAuth)
+	err = SessionProtected(r, cfg.AuthSession)
 	if err != nil {
 		return nil, err
 	}

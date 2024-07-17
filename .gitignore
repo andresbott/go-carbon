@@ -22,3 +22,5 @@ sqlite.go
 
 # project databases
 carbon.db
+zarf/appData/session
+!zarf/appData/session/.placeholder

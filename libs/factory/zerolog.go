@@ -4,6 +4,7 @@ import (
 	"github.com/rs/zerolog"
 	"io"
 	"os"
+	"strings"
 )
 
 // Level defines log levels.
@@ -26,6 +27,23 @@ const (
 	// TraceLevel defines trace log level.
 	TraceLevel Level = -1
 )
+
+func GetLogLevel(in string) Level {
+	in = strings.ToUpper(in)
+	switch in {
+	case "DEBUG":
+		return DebugLevel
+	case "WARN":
+		return WarnLevel
+	case "ERROR", "ERR":
+		return ErrorLevel
+	case "DISABLED", "OFF":
+		return Disabled
+	default:
+		return InfoLevel
+
+	}
+}
 
 func DefaultLogger(lev Level, w io.Writer) *zerolog.Logger {
 	if w == nil {
