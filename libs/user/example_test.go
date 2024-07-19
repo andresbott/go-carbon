@@ -35,6 +35,29 @@ func ExampleUserManager() {
 	// Output: user can login: true
 }
 
+func ExampleStaticUsers() {
+
+	// load Users from a file
+	userMng, err := FromFile("testdata/Users.yaml")
+	panicOnErr(err)
+
+	// manually add a user
+	u := User{Name: "u2", Pw: "u2", Enabled: true}
+	userMng.Users = append(userMng.Users, u)
+
+	// check if the user demo (from file) can login
+	isOK := userMng.AllowLogin("demo", "demo")
+	fmt.Printf("user demo can login: %v\n", isOK)
+
+	// check if the user u2 can login
+	isOK = userMng.AllowLogin("u2", "u2")
+	fmt.Printf("user u2 can login: %v", isOK)
+
+	// Output:
+	// user demo can login: true
+	// user u2 can login: true
+}
+
 func panicOnErr(err error) {
 	if err != nil {
 		panic(err)

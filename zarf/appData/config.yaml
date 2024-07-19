@@ -10,6 +10,14 @@ Auth:
   SessionPath:  "zarf/appData/session"
   HashKey:      "ohlae6aevaet3eagh9zoogshahmeeSha"
   BlockKey:     "ahv5iRietaeth8oo"
+  UserStore:
+#    Type: file
+#    Path: "zarf/appData/users.yaml"
+    Type: static
+    Users:
+      - Name: "demo"
+        Pw: "demo"
+        Enabled: true
 
 Log:
   Level: "info"
