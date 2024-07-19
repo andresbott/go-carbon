@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -16,17 +17,22 @@ type StaticUsers struct {
 	Users []User `yaml:"users"`
 }
 
-func (fu StaticUsers) AllowLogin(user string, hash string) bool {
+func (fu StaticUsers) AllowLogin(user string, pw string) bool {
 	for _, u := range fu.Users {
 		if user == u.Name {
 			if !u.Enabled {
 				return false
 			}
-			if u.Pw == hash {
-				return true
-			} else {
+
+			spew.Dump(user)
+			spew.Dump(pw)
+			spew.Dump(u.Pw)
+
+			access, err := checkPass(u.Pw, pw)
+			if err != nil {
 				return false
 			}
+			return access
 		}
 	}
 	return false
@@ -87,6 +93,9 @@ func htpasswdBytes(in []byte) (*StaticUsers, error) {
 	data := StaticUsers{}
 
 	for _, record := range lines {
+		if len(record) != 2 {
+			return nil, fmt.Errorf("the file does not seem to be a valid htpasswd file")
+		}
 		u := User{
 			Name:    record[0],
 			Pw:      record[1],

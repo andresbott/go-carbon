@@ -45,7 +45,7 @@ type userModel struct {
 type User struct {
 	Name    string `yaml:"name"`
 	Email   string `yaml:"email"`
-	Pw      string `yaml:"pw"`
+	Pw      string `yaml:"pw"` // or hashed passwd
 	Enabled bool   `yaml:"enabled"`
 }
 

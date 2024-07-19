@@ -4,61 +4,59 @@ import (
 	"crypto/sha1"
 	"crypto/subtle"
 	"encoding/base64"
-	"errors"
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
+	"slices"
 	"strings"
 )
 
-var (
-	errMismatchedHashAndPassword = errors.New("mismatched hash and password")
-
-	compareFuncs = []struct {
-		prefix  string
-		compare compareFunc
-	}{
-
-		{"{SHA}", compareShaHashAndPassword},
-		// Bcrypt is complicated. According to crypt(3) from
-		// crypt_blowfish version 1.3 (fetched from
-		// http://www.openwall.com/crypt/crypt_blowfish-1.3.tar.gz), there
-		// are three different has prefixes: "$2a$", used by versions up
-		// to 1.0.4, and "$2x$" and "$2y$", used in all later
-		// versions. "$2a$" has a known bug, "$2x$" was added as a
-		// migration path for systems with "$2a$" prefix and still has a
-		// bug, and only "$2y$" should be used by modern systems. The bug
-		// has something to do with handling of 8-bit characters. Since
-		// both "$2a$" and "$2x$" are deprecated, we are handling them the
-		// same way as "$2y$", which will yield correct results for 7-bit
-		// character passwords, but is wrong for 8-bit character
-		// passwords. You have to upgrade to "$2y$" if you want sant 8-bit
-		// character password support with bcrypt. To add to the mess,
-		// OpenBSD 5.5. introduced "$2b$" prefix, which behaves exactly
-		// like "$2y$" according to the same source.
-		{"$2a$", bcrypt.CompareHashAndPassword},
-		{"$2b$", bcrypt.CompareHashAndPassword},
-		{"$2x$", bcrypt.CompareHashAndPassword},
-		{"$2y$", bcrypt.CompareHashAndPassword},
-	}
+const (
+	SHA1Prefix   = "{SHA}"
+	BCryp1PRefix = "$2$"
+	BCryp2PRefix = "$2a$"
+	BCryp3PRefix = "$2b$"
+	BCryp4PRefix = "$2x$"
+	BCryp5PRefix = "$2y$"
 )
 
-func compareShaHashAndPassword(hash, pw []byte) error {
-	d := sha1.New()
-	d.Write(password)
-	if subtle.ConstantTimeCompare(hashedPassword[5:], []byte(base64.StdEncoding.EncodeToString(d.Sum(nil)))) != 1 {
-		return errMismatchedHashAndPassword
-	}
-	return nil
+var bCryptPrefix = []string{
+	BCryp2PRefix,
+	BCryp3PRefix,
+	BCryp4PRefix,
+	BCryp5PRefix,
 }
 
-// CheckSecret returns true if the password matches the encrypted
-// secret.
-func CheckSecret(password, secret string) bool {
-	compare := compareFuncs[0].compare
-	for _, cmp := range compareFuncs[1:] {
-		if strings.HasPrefix(secret, cmp.prefix) {
-			compare = cmp.compare
-			break
+func checkPass(provided, stored string) (bool, error) {
+
+	if strings.HasPrefix(stored, SHA1Prefix) {
+		// sha1
+		b64 := strings.TrimPrefix(stored, SHA1Prefix)
+		hashed, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return false, fmt.Errorf("malformed sha1(%s): %s", stored, err.Error())
+		}
+		if len(hashed) != sha1.Size {
+			return false, fmt.Errorf("malformed sha1(%s): wrong length", stored)
+		}
+		st := sha1.Sum([]byte(provided))
+		if subtle.ConstantTimeCompare(st[:], hashed) == 1 {
+			return true, nil
+		}
+	} else if strings.HasPrefix(stored, BCryp1PRefix) || slices.Contains(bCryptPrefix, stored[:4]) {
+		// bcrypt
+		err := bcrypt.CompareHashAndPassword([]byte(stored), []byte(provided))
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	} else {
+		// plain
+		if provided == stored {
+			return true, nil
+		} else {
+			return false, nil
 		}
 	}
-	return compare([]byte(secret), []byte(password)) == nil
+
+	return false, nil
 }
