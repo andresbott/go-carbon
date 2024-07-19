@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"fmt"
 	"git.andresbott.com/Golang/carbon/app/config"
 	"git.andresbott.com/Golang/carbon/app/router"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/factory"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/server"
+	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -64,11 +66,36 @@ func serverCmd() *cobra.Command {
 				return err
 			}
 
+			var users auth.UserLogin
+			// load the correct user manager
+			switch cfg.Auth.UserStore.StoreType {
+			case "static":
+				staticUsers := user.StaticUsers{}
+				for _, u := range cfg.Auth.UserStore.Users {
+					staticUsers.Add(u.Name, u.Pw)
+				}
+				users = &staticUsers
+				l.Debug().Str("component", "users").Msgf("loading %d static user(s)", len(staticUsers.Users))
+			case "file":
+				if cfg.Auth.UserStore.FilePath == "" {
+					return fmt.Errorf("no path for users file is empty")
+				}
+				staticUsers, err := user.FromFile(cfg.Auth.UserStore.FilePath)
+				if err != nil {
+					return err
+				}
+				users = staticUsers
+				l.Debug().Str("component", "users").Msgf("loading %d users from file", len(staticUsers.Users))
+			default:
+				return fmt.Errorf("wrong user store in configuration, %s is not supported", cfg.Auth.UserStore.StoreType)
+			}
+
 			// Main APApplication handler
 			appCfg := router.AppCfg{
-				Logger:      l,
-				Db:          db,
-				AuthSession: sessionAuth,
+				Logger:   l,
+				Db:       db,
+				AuthMngr: sessionAuth,
+				Users:    users,
 			}
 			rootHandler, err := router.NewAppHandler(appCfg)
 			if err != nil {

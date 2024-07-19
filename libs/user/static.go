@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -13,22 +12,16 @@ import (
 )
 
 type StaticUsers struct {
-	//Users map[string]string
-	Users []User `yaml:"users"`
+	Users []User `yaml:"Users"`
 }
 
-func (fu StaticUsers) AllowLogin(user string, pw string) bool {
-	for _, u := range fu.Users {
+func (stu *StaticUsers) AllowLogin(user string, pw string) bool {
+	for _, u := range stu.Users {
 		if user == u.Name {
 			if !u.Enabled {
 				return false
 			}
-
-			spew.Dump(user)
-			spew.Dump(pw)
-			spew.Dump(u.Pw)
-
-			access, err := checkPass(u.Pw, pw)
+			access, err := checkPass(pw, u.Pw)
 			if err != nil {
 				return false
 			}
@@ -36,6 +29,13 @@ func (fu StaticUsers) AllowLogin(user string, pw string) bool {
 		}
 	}
 	return false
+}
+func (stu *StaticUsers) Add(user string, pw string) {
+	stu.Users = append(stu.Users, User{
+		Name:    user,
+		Pw:      pw,
+		Enabled: true,
+	})
 }
 
 // todo implement Reload functionality
@@ -59,7 +59,6 @@ func FromFile(file string) (*StaticUsers, error) {
 		return jsonBytes(b)
 	}
 	return htpasswdBytes(b)
-
 }
 
 func yamlBytes(in []byte) (*StaticUsers, error) {

@@ -30,9 +30,10 @@ func (h *MyAppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //var loginForm string
 
 type AppCfg struct {
-	Logger      *zerolog.Logger
-	Db          *gorm.DB
-	AuthSession *auth.SessionMgr
+	Logger   *zerolog.Logger
+	Db       *gorm.DB
+	AuthMngr *auth.SessionMgr
+	Users    auth.UserLogin
 }
 
 // NewAppHandler generates the main url router handler to be used in the server
@@ -47,20 +48,15 @@ func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 	})
 
 	// static demos users
-	demoUsers := user.StaticUsers{
-		Users: map[string]string{
-			"demo": "demo",
-		},
-	}
 
 	// attach API v0 handlers
-	err := apiV0(r.PathPrefix("/api/v0").Subrouter(), cfg.AuthSession, demoUsers) // api/v0 routes
+	err := apiV0(r.PathPrefix("/api/v0").Subrouter(), cfg.AuthMngr, cfg.Users) // api/v0 routes
 	if err != nil {
 		return nil, err
 	}
 
 	// attach the basic auth handler
-	err = basicAuthProtected(r.PathPrefix("/basic").Subrouter(), demoUsers) // api/v0 routes
+	err = basicAuthProtected(r.PathPrefix("/basic").Subrouter(), cfg.Users) // api/v0 routes
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +77,7 @@ func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 	}
 
 	// use session auth
-	err = SessionProtected(r, cfg.AuthSession)
+	err = SessionProtected(r, cfg.AuthMngr)
 	if err != nil {
 		return nil, err
 	}

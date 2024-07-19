@@ -42,7 +42,7 @@ func checkPass(provided, stored string) (bool, error) {
 		if subtle.ConstantTimeCompare(st[:], hashed) == 1 {
 			return true, nil
 		}
-	} else if strings.HasPrefix(stored, BCryp1PRefix) || slices.Contains(bCryptPrefix, stored[:4]) {
+	} else if strings.HasPrefix(stored, BCryp1PRefix) || (len(stored) >= 3 && slices.Contains(bCryptPrefix, stored[:4])) {
 		// bcrypt
 		err := bcrypt.CompareHashAndPassword([]byte(stored), []byte(provided))
 		if err != nil {

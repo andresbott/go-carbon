@@ -19,6 +19,7 @@ verify: fmt test benchmark lint ## run all verification and code structure tiers
 benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
 
+run: serve ## alias to make serve
 serve: ## start the GO service
 	@go run main.go start -c zarf/appData/config.yaml
 

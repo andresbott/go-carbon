@@ -33,6 +33,17 @@ type authConfig struct {
 	SessionPath string
 	HashKey     string
 	BlockKey    string
+	UserStore   userStore
+}
+
+type userStore struct {
+	StoreType string `config:"Type"` // can be static | file
+	FilePath  string `config:"Path"`
+	Users     []User
+}
+type User struct {
+	Name string
+	Pw   string
 }
 
 // Default represents the basic set of sensible defaults
@@ -50,6 +61,10 @@ var defaultCfg = AppCfg{
 		SessionPath: "", // location where the sessions are stored
 		HashKey:     "", // cookie store encryption key
 		BlockKey:    "", // cookie value encryption
+		UserStore: userStore{
+			StoreType: "static",
+			Users:     []User{},
+		},
 	},
 	Log: log{
 		Level: "info",

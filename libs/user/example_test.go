@@ -37,8 +37,8 @@ func ExampleUserManager() {
 
 func ExampleStaticUsers() {
 
-	// load users from a file
-	userMng, err := FromFile("testdata/users.yaml")
+	// load Users from a file
+	userMng, err := FromFile("testdata/Users.yaml")
 	panicOnErr(err)
 
 	// manually add a user
