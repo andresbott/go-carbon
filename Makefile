@@ -42,8 +42,6 @@ build-ui:
 	export VITE_BASE="/ui" && \
 	npm run build
 
-snapshot: ## create a snapshot build
-
 
 #==========================================================================================
 #  Swagger
@@ -60,24 +58,37 @@ swagger-build: ## build the swagger spec
 #==========================================================================================
 #  Docker
 #==========================================================================================
-docker-builder-image: # build the base docker image used to build the project
+docker-builder-image: ## build the base docker image used to build the project
 	@docker build ./ -t carbon-builder -f zarf/Docker/base.Dockerfile
 
-docker-test: docker-builder-image
+docker-test: docker-builder-image ## run tests in docker
 	@docker build ./ -t carbon-test:${COMMIT_SHA_SHORT} -f zarf/Docker/test.Dockerfile
 
-docker-build: docker-test
-	@rm -rf dist
-	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} --build-arg TEST_TAG=${COMMIT_SHA_SHORT} \
-	-f zarf/Docker/test.Dockerfile
-	@docker cp carbon-build:${COMMIT_SHA_SHORT}:/project/dist /${PWD_DIR}/dist
-
-docker-snapshot: docker-builder-image ## build a snapshot release within docker
+docker-build: docker-builder-image ## build a snapshot release within docker
 	@rm -rf dist
 	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} \
 	--build-arg TEST_TAG=${COMMIT_SHA_SHORT} \
-	-f zarf/Docker/snapshot.Dockerfile
+	-f zarf/Docker/build.Dockerfile
 	@./zarf/Docker/dockerCP.sh carbon-build:${COMMIT_SHA_SHORT} /project/dist/ ${PWD_DIR}
+
+
+.PHONY: check-git-clean
+check-git-clean: # check if git repo is clen
+	@git diff --quiet
+
+check_env: # check for needed envs
+ifndef GITHUB_TOKEN
+	$(error GITHUB_TOKEN is undefined, create one with repo permissions here: https://github.com/settings/tokens/new?scopes=repo,write:packages)
+endif
+	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
+
+release: check_env check-git-clean docker-test ## release a new version
+	@git diff --quiet || ( echo 'git is in dirty state' ; exit 1 )
+	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
+	@git tag -d $(version) || true
+	@git tag -a $(version) -m "Release version: $(version)"
+	@git push origin $(version)
+	@#goreleaser --rm-dist
 
 clean: ## clean build env
 	@rm -rf dist
