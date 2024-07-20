@@ -4,7 +4,5 @@ WORKDIR /project
 COPY . .
 
 RUN make package-ui
-RUN make test
-RUN make lint
-RUN make benchmark
-RUN make license-check
+RUN goreleaser --snapshot --clean
+RUN chmod -R 0777 dist/

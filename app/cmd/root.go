@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"runtime"
 )
 
 // Execute is the entry point for the command line
@@ -29,7 +30,34 @@ func newRootCommand() *cobra.Command {
 
 	cmd.AddCommand(
 		serverCmd(),
+		versionCmd(),
 	)
 
 	return cmd
+}
+
+var Version = "devel"
+var BuildTime = ""
+var ShaVer = "undefined"
+
+func versionCmd() *cobra.Command {
+	cmd := cobra.Command{
+		Use:   "version",
+		Short: "version ",
+		Long:  `version long`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("Version: %s\n", Version)
+			fmt.Printf("Build date: %s\n", BuildTime)
+			fmt.Printf("Commit sha: %s\n", ShaVer)
+			fmt.Printf("Compiler: %s\n", runtime.Version())
+		},
+	}
+
+	// hide persistent flag on this command
+	cmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		_ = command.Flags().MarkHidden("pers")
+		command.Parent().HelpFunc()(command, strings)
+	})
+
+	return &cmd
 }

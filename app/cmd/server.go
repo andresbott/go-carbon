@@ -45,6 +45,9 @@ func runServer(configFile string) error {
 	}
 	l := factory.DefaultLogger(factory.GetLogLevel(cfg.Log.Level), logOutput)
 
+	l.Info().Str("version", Version).Str("component", "startup").
+		Msgf("running version %s, build date: %s, commint: %s ", Version, BuildTime, ShaVer)
+
 	// print config messages delayed
 	for _, m := range cfg.Msgs {
 		if m.Level == "info" {

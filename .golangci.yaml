@@ -71,6 +71,7 @@ issues:
         - gosec
 # output configuration options
 output:
+  sort-results: true
   sort-order:
     - file
     - severity

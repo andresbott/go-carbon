@@ -6,9 +6,6 @@ default: help
 #==========================================================================================
 #  Testing
 #==========================================================================================
-
-verify: test benchmark lint ## run all verification and code structure tiers
-
 test: ## run go tests
 	@go test ./... -cover
 
@@ -17,6 +14,9 @@ lint: ## run go linter
 
 benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
+
+license-check: ## check for invalid licenses
+	@go list -m -mod=readonly  -json all  | go-licence-detector -includeIndirect -validate -rules zarf/allowedLicenses.json
 
 #==========================================================================================
 #  Running
@@ -42,6 +42,9 @@ build-ui:
 	export VITE_BASE="/ui" && \
 	npm run build
 
+snapshot: ## create a snapshot build
+
+
 #==========================================================================================
 #  Swagger
 #==========================================================================================
@@ -57,16 +60,27 @@ swagger-build: ## build the swagger spec
 #==========================================================================================
 #  Docker
 #==========================================================================================
-docker-builder-image: # build the docker image used to build the project
-	@docker build ./ -t carbon-builder -f zarf/Docker/carbon-builder.Dockerfile
+docker-builder-image: # build the base docker image used to build the project
+	@docker build ./ -t carbon-builder -f zarf/Docker/base.Dockerfile
 
 docker-test: docker-builder-image
-	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} -f zarf/Docker/test.Dockerfile
+	@docker build ./ -t carbon-test:${COMMIT_SHA_SHORT} -f zarf/Docker/test.Dockerfile
 
 docker-build: docker-test
+	@rm -rf dist
 	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} --build-arg TEST_TAG=${COMMIT_SHA_SHORT} \
 	-f zarf/Docker/test.Dockerfile
+	@docker cp carbon-build:${COMMIT_SHA_SHORT}:/project/dist /${PWD_DIR}/dist
 
+docker-snapshot: docker-builder-image ## build a snapshot release within docker
+	@rm -rf dist
+	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} \
+	--build-arg TEST_TAG=${COMMIT_SHA_SHORT} \
+	-f zarf/Docker/snapshot.Dockerfile
+	@./zarf/Docker/dockerCP.sh carbon-build:${COMMIT_SHA_SHORT} /project/dist/ ${PWD_DIR}
+
+clean: ## clean build env
+	@rm -rf dist
 
 #==========================================================================================
 #  Help
