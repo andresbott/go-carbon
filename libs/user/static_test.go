@@ -45,9 +45,9 @@ func TestUserFromFile(t *testing.T) {
 	}
 
 	files := map[string]string{
-		"yaml":     "testdata/Users.yaml",
-		"json":     "testdata/Users.json",
-		"htpasswd": "testdata/Users.htpasswd",
+		"yaml":     "testdata/users.yaml",
+		"json":     "testdata/users.json",
+		"htpasswd": "testdata/users.htpasswd",
 	}
 	for k, v := range files {
 		t.Run(k, func(t *testing.T) {

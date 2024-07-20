@@ -107,6 +107,8 @@ func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 	}, nil
 }
 
+// TODO put on propper place and usage
+// nolint: unused
 func sampleUserManager() (*user.DbManager, error) {
 
 	gormLogger := logger.New(

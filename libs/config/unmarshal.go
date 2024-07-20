@@ -23,6 +23,8 @@ func (c *Config) Unmarshal(payload any) error {
 const sep = "."
 
 // internal recursive unmarshal function, it returns true if any change was made to the passed pointer
+//
+//nolint:gocognit
 func (c *Config) unmarshal(item reflect.Value, prefix string) (bool, error) {
 	if len(prefix) > 0 {
 		prefix += sep
@@ -113,6 +115,8 @@ var boolValues = []string{
 // setValue takes a single reflect.value field from a struct to be unmarshalled and sets the value
 // in order of precedence it checks first if the field name is present in the flattened map
 // and then overrides with ENVs if any is found for the same key
+//
+//nolint:gocognit,nestif
 func (c *Config) setValue(valueField reflect.Value, fieldName string) (bool, error) {
 
 	var val reflect.Value

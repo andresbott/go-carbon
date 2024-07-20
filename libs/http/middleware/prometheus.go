@@ -54,7 +54,6 @@ func PromMiddleware(next http.Handler, histogram Histogram) http.Handler {
 		// get the duration
 		timeDiff := time.Since(timeStart)
 		observe(histogram, r, respWriter.StatusCode(), timeDiff)
-		return
 	})
 }
 
@@ -70,7 +69,6 @@ func PromLogMiddleware(next http.Handler, histogram Histogram, l *zerolog.Logger
 		log(l, r, respWriter.StatusCode(), timeDiff)
 		// add prometheus metric
 		observe(histogram, r, respWriter.StatusCode(), timeDiff)
-		return
 	})
 }
 

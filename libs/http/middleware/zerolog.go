@@ -16,7 +16,6 @@ func ZerologMiddleware(next http.Handler, l *zerolog.Logger) http.Handler {
 		// get the duration
 		timeDiff := time.Since(timeStart)
 		log(l, r, respWriter.StatusCode(), timeDiff)
-		return
 	})
 }
 

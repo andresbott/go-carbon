@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// nolint: govet
 func ExampleBasicAuth() {
 	protectedSite := dummyHandler()
 	// create an instance of basic auth
@@ -35,6 +36,7 @@ func ExampleBasicAuth() {
 
 }
 
+// nolint: govet
 func ExampleSessionAuth() {
 
 	protectedSite := dummyHandler()

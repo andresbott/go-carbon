@@ -38,12 +38,11 @@ func ExampleUserManager() {
 func ExampleStaticUsers() {
 
 	// load Users from a file
-	userMng, err := FromFile("testdata/Users.yaml")
+	userMng, err := FromFile("testdata/users.yaml")
 	panicOnErr(err)
 
 	// manually add a user
-	u := User{Name: "u2", Pw: "u2", Enabled: true}
-	userMng.Users = append(userMng.Users, u)
+	userMng.Add("u2", "u2")
 
 	// check if the user demo (from file) can login
 	isOK := userMng.AllowLogin("demo", "demo")

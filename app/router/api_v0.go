@@ -27,7 +27,27 @@ func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin) error 
 	})
 	// add users handling to api
 	userApi(r, session, users)
+
+	// add tasks api
+	tasksApi(r, session, users)
 	return nil
+}
+
+func tasksApi(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin) {
+	pageHandler := handlers.SimpleText{
+		Text: "Page protected by session auth",
+		Links: []handlers.Link{
+			{Text: "back to root", Url: "../"},
+		},
+	}
+
+	ProtectedPage := session.Middleware(&pageHandler)
+	// GET
+	r.Path("/tasks").Handler(ProtectedPage)
+	// PUT
+	r.Path("/task").Handler(ProtectedPage)
+	// GET | PUT | DELETE
+	r.Path("/task/{ID}").Handler(ProtectedPage)
 }
 
 func userApi(apiRoute *mux.Router, session *auth.SessionMgr, users auth.UserLogin) {

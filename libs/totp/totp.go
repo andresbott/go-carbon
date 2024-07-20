@@ -15,17 +15,19 @@ import (
 
 // PLACEHOLDER!!!!
 
+// nolint: unused
 func display(key *otp.Key, data []byte) {
 	fmt.Printf("Issuer:       %s\n", key.Issuer())
 	fmt.Printf("Account User: %s\n", key.AccountName())
 	fmt.Printf("Secret:       %s\n", key.Secret())
 	fmt.Println("Writing PNG to qr-code.png....")
-	os.WriteFile("qr-code.png", data, 0644)
+	_ = os.WriteFile("qr-code.png", data, 0644)
 	fmt.Println("")
 	fmt.Println("Please add your TOTP to your OTP Application now!")
 	fmt.Println("")
 }
 
+// nolint: unused
 func promptForPasscode() string {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter Passcode: ")
@@ -35,6 +37,7 @@ func promptForPasscode() string {
 
 // Demo function, not used in main
 // Generates Passcode using a UTF-8 (not base32) secret and custom parameters
+// nolint: unused
 func GeneratePassCode(utf8string string) string {
 	secret := base32.StdEncoding.EncodeToString([]byte(utf8string))
 	passcode, err := totp.GenerateCodeCustom(secret, time.Now(), totp.ValidateOpts{
@@ -49,6 +52,7 @@ func GeneratePassCode(utf8string string) string {
 	return passcode
 }
 
+// nolint: unused
 func main() {
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "Example.com",
@@ -63,7 +67,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	png.Encode(&buf, img)
+	_ = png.Encode(&buf, img)
 
 	// display the QR code to the user.
 	display(key, buf.Bytes())

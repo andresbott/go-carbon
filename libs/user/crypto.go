@@ -26,37 +26,47 @@ var bCryptPrefix = []string{
 	BCryp5PRefix,
 }
 
-func checkPass(provided, stored string) (bool, error) {
+// nolint:nestif // Reason: nestif flagging false complexity
+func checkPass(plainPass, hash string) (bool, error) {
 
-	if strings.HasPrefix(stored, SHA1Prefix) {
+	if strings.HasPrefix(hash, SHA1Prefix) {
 		// sha1
-		b64 := strings.TrimPrefix(stored, SHA1Prefix)
-		hashed, err := base64.StdEncoding.DecodeString(b64)
+		b64hash := strings.TrimPrefix(hash, SHA1Prefix)
+		hashed, err := base64.StdEncoding.DecodeString(b64hash)
 		if err != nil {
-			return false, fmt.Errorf("malformed sha1(%s): %s", stored, err.Error())
+			return false, fmt.Errorf("malformed sha1 hash: %s", err.Error())
 		}
 		if len(hashed) != sha1.Size {
-			return false, fmt.Errorf("malformed sha1(%s): wrong length", stored)
+			return false, fmt.Errorf("malformed sha1 wrong length")
 		}
-		st := sha1.Sum([]byte(provided))
+		st := sha1.Sum([]byte(plainPass))
 		if subtle.ConstantTimeCompare(st[:], hashed) == 1 {
 			return true, nil
 		}
-	} else if strings.HasPrefix(stored, BCryp1PRefix) || (len(stored) >= 3 && slices.Contains(bCryptPrefix, stored[:4])) {
+		return false, nil
+	} else if isbCryptString(hash) {
 		// bcrypt
-		err := bcrypt.CompareHashAndPassword([]byte(stored), []byte(provided))
+		err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(plainPass))
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	} else {
 		// plain
-		if provided == stored {
+		if plainPass == hash {
 			return true, nil
 		} else {
 			return false, nil
 		}
 	}
+}
 
-	return false, nil
+func isbCryptString(hash string) bool {
+	if strings.HasPrefix(hash, BCryp1PRefix) {
+		return true
+	}
+	if len(hash) >= 3 && slices.Contains(bCryptPrefix, hash[:4]) {
+		return true
+	}
+	return false
 }
