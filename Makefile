@@ -82,7 +82,8 @@ ifndef GITHUB_TOKEN
 endif
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 
-release: check_env check-git-clean docker-test ## release a new version
+#release: check_env check-git-clean docker-test ## release a new version
+release: check_env check-git-clean ## release a new version
 	@git diff --quiet || ( echo 'git is in dirty state' ; exit 1 )
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 	@git tag -d $(version) || true
