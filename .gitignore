@@ -11,14 +11,19 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+dist
 
 # ---> Idea
-
 *.iml
 .idea
 
 constants.go
 sqlite.go
+
+# SPA
+app/spa/files/ui
+!app/spa/files/ui/.gitkeep
+
 
 # project databases
 carbon.db

@@ -85,17 +85,6 @@ func SessionProtected(r *mux.Router, session *auth.SessionMgr) error {
 
 	ProtectedPage := session.Middleware(&pageHandler)
 	r.Path("/session").Handler(ProtectedPage)
-	// handle the post request
-	//loginHandler := auth.FormAuthHandler(sessionAuth, demoUsers)
-	//r.PathPrefix(SessionLogin).Methods(http.MethodPost).Handler(loginHandler)
 
-	// render the form
-	//loginFormHandlr := handlers.TemplateWithRequest(server.loginForm, func(r *http.Request) map[string]interface{} {
-	//	payload := map[string]interface{}{}
-	//	payload["Path"] = sessionLogin
-	//	payload["Redirect"] = sessionContent
-	//	return payload
-	//})
-	//r.PathPrefix(sessionLogin).HandlerFunc(loginFormHandlr)
 	return nil
 }

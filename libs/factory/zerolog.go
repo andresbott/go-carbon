@@ -49,8 +49,7 @@ func DefaultLogger(lev Level, w io.Writer) *zerolog.Logger {
 	if w == nil {
 		w = os.Stdout
 	}
-	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout}
-	l := zerolog.New(consoleWriter).With().Timestamp().Logger().Level(zerolog.Level(lev))
+	l := zerolog.New(w).With().Timestamp().Logger().Level(zerolog.Level(lev))
 	return &l
 
 }

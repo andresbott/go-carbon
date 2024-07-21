@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -124,9 +123,9 @@ type Writer struct {
 
 // cfgLoader holds references to options to control the order of precedence
 type cfgLoader struct {
-	def    *Defaults
-	file   *CfgFile
-	dir    *CfgDir
+	def  *Defaults
+	file *CfgFile
+	//dir    *CfgDir
 	env    *EnvVar
 	writer *Writer
 	unmar  *Unmarshal
@@ -142,9 +141,9 @@ func newCfgLoader(opts []any) (cfgLoader, error) {
 			cl.def = &item
 		case CfgFile:
 			cl.file = &item
-		case CfgDir:
-			// TODO implemnt
-			spew.Dump("CfgDir: TODO implement")
+		//case CfgDir:
+		//	// TODO implemnt
+		//	spew.Dump("CfgDir: TODO implement")
 		case EnvVar:
 			cl.env = &item
 		case Writer:
@@ -177,11 +176,11 @@ func (c *Config) GetString(fieldName string) (string, error) {
 
 	val, ok := c.flatData[fieldName]
 	if ok {
-		switch val.(type) {
+		switch item := val.(type) {
 		case map[string]interface{}:
 			return "", nil
 		case string:
-			return c.fileOrString(val.(string), fieldName)
+			return c.fileOrString(item, fieldName)
 		default:
 			return fmt.Sprintf("%v", val), nil
 		}

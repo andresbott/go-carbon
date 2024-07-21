@@ -12,7 +12,7 @@ import (
 )
 
 type StaticUsers struct {
-	Users []User `yaml:"Users"`
+	Users []User `yaml:"users"`
 }
 
 func (stu *StaticUsers) AllowLogin(user string, pw string) bool {

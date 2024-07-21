@@ -2,6 +2,7 @@ package userhandler
 
 import (
 	_ "embed"
+	"fmt"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/davecgh/go-spew/spew"
@@ -79,6 +80,8 @@ func (h DbHandler) CreateUserHandleForm() func(w http.ResponseWriter, r *http.Re
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
+			// TODO
+			panic(err)
 			// Handle error
 		}
 
@@ -123,6 +126,7 @@ func (h DbHandler) UserHandler(base string) *http.ServeMux {
 			h.CreateUserHandleForm()(w, r)
 		} else {
 			// todo unsuported request
+			panic(fmt.Errorf("unsuppreted req"))
 		}
 	}))
 

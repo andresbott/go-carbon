@@ -1,9 +1,8 @@
-FROM golang:1.22
+FROM carbon-builder:latest
 
-RUN apt-get update && apt-get upgrade -y
+WORKDIR /project
+COPY . .
 
-# install golangci lint
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1
-
-# install node
-RUN apt-get install -y npm
+RUN make package-ui
+RUN goreleaser build --auto-snapshot  --clean
+RUN chmod -R 0777 dist/
