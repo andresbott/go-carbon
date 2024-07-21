@@ -18,7 +18,7 @@ jobs:
         run: go version
       - name: install dependencies
         run: |
-          apt-get update \
+          apt-get update && \
           apt-get install -y libsqlite3-dev
 
       ## Setup node
