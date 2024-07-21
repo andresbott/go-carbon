@@ -3,9 +3,8 @@ FROM carbon-builder:latest
 WORKDIR /project
 COPY . .
 
-ENV GITHUB_TOKEN=
-RUN ech
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
+    export GITHUB_TOKEN=$GITHUB_TOKEN && \
+    goreleaser --clean
 
-#RUN make package-ui
-#RUN goreleaser --clean
-#RUN chmod -R 0777 dist/

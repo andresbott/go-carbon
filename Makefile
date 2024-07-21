@@ -84,14 +84,16 @@ endif
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 
 #release: check_env check-git-clean docker-test ## release a new version
-release: check_env check-git-clean ## release a new version
+#release: check_env check-git-clean ## release a new version
+release: check_env  ## release a new version
 	@git diff --quiet || ( echo 'git is in dirty state' ; exit 1 )
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 	@git tag -d $(version) || true
 	@git tag -a $(version) -m "Release version: $(version)"
 	@git push --delete origin $(version) || true
 	@git push origin $(version) || true
-	@#goreleaser --rm-dist
+	@GITHUB_TOKEN=${GITHUB_TOKEN} docker build -t carbon-release:${COMMIT_SHA_SHORT} --secret id=GITHUB_TOKEN ./ -f zarf/Docker/release.Dockerfile
+	@./zarf/Docker/dockerCP.sh carbon-build:${COMMIT_SHA_SHORT} /project/dist/ ${PWD_DIR}
 
 clean: ## clean build env
 	@rm -rf dist
