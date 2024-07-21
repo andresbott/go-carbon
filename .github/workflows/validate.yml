@@ -1,0 +1,68 @@
+name: GO
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      ## Setup GO
+      - name: Setup Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Display Go version
+        run: go version
+      - name: install dependencies
+        run: |
+          sudo apt-get update && \
+          sudo apt-get install -y libsqlite3-0 libsqlite3-dev build-essential
+
+      ## Setup node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      ## verify
+      - name: build UI
+        run: make package-ui
+      - name: go test
+        run: make test
+
+  benchmark:
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      ## Setup GO
+      - name: Setup Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Display Go version
+        run: go version
+      - name: install dependencies
+        run: |
+          sudo apt-get update && \
+          sudo apt-get install -y libsqlite3-0 libsqlite3-dev build-essential
+
+      - name: go benchmark
+        run: make benchmark
+
+  verify-license:
+    name: verify licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      ## Setup GO
+      - name: Setup Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: install go-licence-detectors
+        run: go install go.elastic.co/go-licence-detector@latest
+
+      - name: check licenses
+        run: make license-check

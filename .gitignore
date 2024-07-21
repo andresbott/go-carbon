@@ -9,23 +9,18 @@
 # Test binary, build with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-dist
-
-# ---> Idea
+# IDE shenanigans
 *.iml
-.idea
+.idea/
 
-constants.go
-sqlite.go
+# build output
+dist/
 
 # SPA
-app/spa/files/ui
+app/spa/files/ui/*
 !app/spa/files/ui/.gitkeep
-
 
 # project databases
 carbon.db
 zarf/appData/session
-!zarf/appData/session/.placeholder
+!zarf/appData/session/.gitkeep
