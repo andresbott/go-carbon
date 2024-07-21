@@ -1,4 +1,4 @@
-package totp
+package experimental
 
 import (
 	"github.com/pquerna/otp"
