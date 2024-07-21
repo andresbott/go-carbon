@@ -10,18 +10,23 @@ test: ## run go tests
 	@go test ./... -cover
 
 lint: ## run go linter
+	# depends on https://github.com/golangci/golangci-lint
 	@golangci-lint run
 
 benchmark: ## run go benchmarks
 	@go test -run=^$$ -bench=. ./...
 
 license-check: ## check for invalid licenses
+	# depends on : https://github.com/elastic/go-licence-detector
 	@go list -m -mod=readonly  -json all  | go-licence-detector -includeIndirect -validate -rules zarf/allowedLicenses.json
+
+.PHONY: verify
+verify: package-ui test lint benchmark license-check ## run all tests
+
 
 #==========================================================================================
 #  Running
 #==========================================================================================
-
 run: serve ## alias to make serve
 serve: ## start the GO service
 	@go run main.go start -c zarf/appData/config.yaml
@@ -31,7 +36,6 @@ serve-ui: package-ui serve## build the UI and start the GO service
 #==========================================================================================
 #  Building
 #==========================================================================================
-
 package-ui: build-ui ## build the web and copy into Go pacakge
 	rm -rf ./app/spa/files/ui*
 	mkdir -p ./app/spa/files/ui
@@ -42,11 +46,12 @@ build-ui:
 	export VITE_BASE="/ui" && \
 	npm run build
 
+build: package-ui ## use goreleaser to build
+	@goreleaser build --auto-snapshot --clean
 
 #==========================================================================================
 #  Swagger
 #==========================================================================================
-
 swagger: swagger-build ## build and serve the swagger spec
 	@cd zarf/swagger && go run main.go
 
@@ -62,15 +67,11 @@ docker-builder-image: ## build the base docker image used to build the project
 	@docker build ./ -t carbon-builder -f zarf/Docker/base.Dockerfile
 
 docker-test: docker-builder-image ## run tests in docker
-	@docker build ./ -t carbon-test:${COMMIT_SHA_SHORT} -f zarf/Docker/test.Dockerfile
+	@docker build ./ -f zarf/Docker/test.Dockerfile
 
 docker-build: docker-builder-image ## build a snapshot release within docker
-	@rm -rf dist
-	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} \
-	--build-arg TEST_TAG=${COMMIT_SHA_SHORT} \
-	-f zarf/Docker/build.Dockerfile
+	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} -f zarf/Docker/build.Dockerfile
 	@./zarf/Docker/dockerCP.sh carbon-build:${COMMIT_SHA_SHORT} /project/dist/ ${PWD_DIR}
-
 
 .PHONY: check-git-clean
 check-git-clean: # check if git repo is clen

@@ -23,9 +23,11 @@ RUN apt-get install -y joe bash-completion
 RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1
 ## install go-licence-detectors
 RUN go install go.elastic.co/go-licence-detector@latest
-## install goreleaser oss
-RUN echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list && \
-    apt update && apt install -y goreleaser
 
+## install goreleaser oss
+RUN wget https://github.com/goreleaser/goreleaser/releases/download/v2.1.0/goreleaser_2.1.0_amd64.deb && \
+    dpkg -i goreleaser_2.1.0_amd64.deb
 # install node
 RUN apt-get install -y npm
+
+WORKDIR /project

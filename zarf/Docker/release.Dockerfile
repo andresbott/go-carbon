@@ -3,6 +3,9 @@ FROM carbon-builder:latest
 WORKDIR /project
 COPY . .
 
-RUN make package-ui
-RUN goreleaser --snapshot --clean --rm-dist
-RUN chmod -R 0777 dist/
+ENV GITHUB_TOKEN=
+RUN ech
+
+#RUN make package-ui
+#RUN goreleaser --clean
+#RUN chmod -R 0777 dist/
