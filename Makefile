@@ -89,7 +89,8 @@ release: check_env check-git-clean ## release a new version
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 	@git tag -d $(version) || true
 	@git tag -a $(version) -m "Release version: $(version)"
-	@git push --delete origin $(version)
+	@git push --delete origin $(version) || true
+	@git push origin $(version) || true
 	@#goreleaser --rm-dist
 
 clean: ## clean build env
