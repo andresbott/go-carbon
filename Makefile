@@ -65,13 +65,13 @@ swagger-build: ## build the swagger spec
 #==========================================================================================
 #  Docker
 #==========================================================================================
-docker-builder-image: ## build the base docker image used to build the project
-	@docker build ./ -t carbon-builder -f zarf/Docker/base.Dockerfile
+docker-base: ## build the base docker image used to build the project
+	@docker build ./ -t carbon-builder:latest -f zarf/Docker/base.Dockerfile
 
-docker-test: docker-builder-image ## run tests in docker
+docker-test: docker-base ## run tests in docker
 	@docker build ./ -f zarf/Docker/test.Dockerfile
 
-docker-build: docker-builder-image ## build a snapshot release within docker
+docker-build: docker-base ## build a snapshot release within docker
 	@docker build ./ -t carbon-build:${COMMIT_SHA_SHORT} -f zarf/Docker/build.Dockerfile
 	@./zarf/Docker/dockerCP.sh carbon-build:${COMMIT_SHA_SHORT} /project/dist/ ${PWD_DIR}
 
