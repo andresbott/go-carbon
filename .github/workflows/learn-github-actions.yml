@@ -16,6 +16,18 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-      # You can test your matrix by printing the current Go version
+
       - name: Display Go version
         run: go version
+
+      - name: install golangci lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1
+      - name: golangci-lint version
+        run: golangci-lint --version
+
+      - name: install go-licence-detectors
+        run: go install go.elastic.co/go-licence-detector@latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
