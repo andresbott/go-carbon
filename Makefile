@@ -40,6 +40,7 @@ package-ui: build-ui ## build the web and copy into Go pacakge
 	rm -rf ./app/spa/files/ui*
 	mkdir -p ./app/spa/files/ui
 	cp -r ./webui/dist/* ./app/spa/files/ui/
+	touch ./app/spa/files/ui/.gitkeep
 build-ui:
 	@cd webui && \
 	npm install && \
@@ -79,15 +80,21 @@ docker-build: docker-base ## build a snapshot release within docker
 check-git-clean: # check if git repo is clen
 	@git diff --quiet
 
+.PHONY: check-branch
+check-branch:
+	@current_branch=$$(git symbolic-ref --short HEAD) && \
+	if [ "$$current_branch" != "main" ]; then \
+		echo "Error: You are on branch '$$current_branch'. Please switch to 'main'."; \
+		exit 1; \
+	fi
+
 check_env: # check for needed envs
 ifndef GITHUB_TOKEN
 	$(error GITHUB_TOKEN is undefined, create one with repo permissions here: https://github.com/settings/tokens/new?scopes=repo,write:packages)
 endif
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 
-#release: check_env check-git-clean docker-test ## release a new version
-#release: check_env check-git-clean ## release a new version
-release: check_env  ## release a new version
+release: check_env check-branch check-git-clean docker-test ## release a new version
 	@git diff --quiet || ( echo 'git is in dirty state' ; exit 1 )
 	@[ "${version}" ] || ( echo ">> version is not set, usage: make release version=\"v1.2.3\" "; exit 1 )
 	@git tag -d $(version) || true
