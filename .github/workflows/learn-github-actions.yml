@@ -25,6 +25,9 @@ jobs:
           node-version: '20'
 
       ## verify
+      - name: build UI
+        run: make package-ui
+        
       - name: go test
         run: make test
 
