@@ -3,7 +3,7 @@ name: verify licenses
 on: [push]
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

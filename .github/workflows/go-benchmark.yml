@@ -1,9 +1,9 @@
-name: go test
+name: go benchmark
 
 on: [push]
 
 jobs:
-  test:
+  benchmark:
 
     runs-on: ubuntu-latest
     env:
