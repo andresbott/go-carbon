@@ -1,5 +1,4 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+# this is a slim down version of the file in zarf/goreleaser-all.yaml for local snapshot release
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -12,14 +11,10 @@ builds:
   - id: linux
     goarch:
       - amd64
-      - arm64
-      - arm
     goos:
       - linux
     goamd64:
-      - v2
       - v3
-      - v4
     ldflags:
       - -s -w
       - -X git.andresbott.com/Golang/carbon/app/cmd.Version={{.Version}}
@@ -31,69 +26,6 @@ builds:
         {{- if eq .Arch "arm64" }}CC=aarch64-linux-gnu-gcc{{- end }}
         {{- if eq .Arch "arm" }}CC=arm-linux-gnueabi-gcc{{- end }}
     binary: carbon
-
-  # =====================================================================================
-  # Windows build
-  # =====================================================================================
-  - id: windows
-    goos:
-      - windows
-    goarch:
-      - amd64
-      - arm64
-    goamd64:
-      - v2
-      - v3
-      - v4
-    ldflags:
-      - -s -w
-      - -X git.andresbott.com/Golang/carbon/app/cmd.Version={{.Version}}
-      - -X git.andresbott.com/Golang/carbon/app/cmd.BuildTime={{.Date}}
-      - -X git.andresbott.com/Golang/carbon/app/cmd.ShaVer={{.Commit}}
-
-    flags:
-      - -trimpath
-    env:
-      - CGO_ENABLED=1
-      - >-
-        {{- if eq .Os "windows" }}
-          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-windows-gnu{{- end }}
-          {{- if eq .Arch "arm64"}}CC=zig cc -target aarch64-windows-gnu{{- end }}
-        {{- end }}
-      - >-
-        {{- if eq .Os "windows" }}
-          {{- if eq .Arch "amd64" }}CXX=zig c++ -target x86_64-windows-gnu{{- end }}
-          {{- if eq .Arch "arm64"}}CXX=zig c++ -target aarch64-windows-gnu{{- end }}
-        {{- end }}
-
-  # =====================================================================================
-  # MAC build
-  # leaving this block for reference, but since we don´ t have a SDK this will not work
-  # =====================================================================================
-  #  - id: darwin
-  #    goos:
-  #      - darwin
-  #    goarch:
-  #      - amd64
-  #      - arm64
-  #    ldflags:
-  #      - -s -w
-  #    flags:
-  #      - -trimpath
-  #      - -buildmode=pie
-  #    env:
-  #      - CGO_ENABLED=1
-  #      - >-
-  #        {{- if eq .Os "darwin" }}
-  #          {{- if eq .Arch "amd64"}}CC=zig cc -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #          {{- if eq .Arch "arm64"}}CC=zig cc -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #        {{- end }}
-  #      - >-
-  #        {{- if eq .Os "darwin" }}
-  #          {{- if eq .Arch "amd64"}}CC=zig c++ -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #          {{- if eq .Arch "arm64"}}CC=zig c++ -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #        {{- end }}
-
 
 archives:
   - format: tar.gz

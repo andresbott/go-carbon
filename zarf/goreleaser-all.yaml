@@ -1,0 +1,150 @@
+# Main goreleaser configuration file used to release all of the binaries
+# this releaser expects a variety of tools and compilers, hence it's probably the best
+# to be used with the make release target that builds within docker
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    - go mod vendor
+builds:
+  # =====================================================================================
+  # Linux build
+  # =====================================================================================
+  - id: linux
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goos:
+      - linux
+    goamd64:
+      - v2
+      - v3
+      - v4
+    ldflags:
+      - -s -w
+      - -X git.andresbott.com/Golang/carbon/app/cmd.Version={{.Version}}
+      - -X git.andresbott.com/Golang/carbon/app/cmd.BuildTime={{.Date}}
+      - -X git.andresbott.com/Golang/carbon/app/cmd.ShaVer={{.Commit}}
+    env:
+      - CGO_ENABLED=1
+      - >- 
+        {{- if eq .Arch "arm64" }}CC=aarch64-linux-gnu-gcc{{- end }}
+        {{- if eq .Arch "arm" }}CC=arm-linux-gnueabi-gcc{{- end }}
+    binary: carbon
+
+  # =====================================================================================
+  # Windows build
+  # =====================================================================================
+  - id: windows
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    goamd64:
+      - v2
+      - v3
+      - v4
+    ldflags:
+      - -s -w
+      - -X git.andresbott.com/Golang/carbon/app/cmd.Version={{.Version}}
+      - -X git.andresbott.com/Golang/carbon/app/cmd.BuildTime={{.Date}}
+      - -X git.andresbott.com/Golang/carbon/app/cmd.ShaVer={{.Commit}}
+
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=1
+      - >-
+        {{- if eq .Os "windows" }}
+          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-windows-gnu{{- end }}
+          {{- if eq .Arch "arm64"}}CC=zig cc -target aarch64-windows-gnu{{- end }}
+        {{- end }}
+      - >-
+        {{- if eq .Os "windows" }}
+          {{- if eq .Arch "amd64" }}CXX=zig c++ -target x86_64-windows-gnu{{- end }}
+          {{- if eq .Arch "arm64"}}CXX=zig c++ -target aarch64-windows-gnu{{- end }}
+        {{- end }}
+
+  # =====================================================================================
+  # MAC build
+  # leaving this block for reference, but since we don´ t have a SDK this will not work
+  # =====================================================================================
+  #  - id: darwin
+  #    goos:
+  #      - darwin
+  #    goarch:
+  #      - amd64
+  #      - arm64
+  #    ldflags:
+  #      - -s -w
+  #    flags:
+  #      - -trimpath
+  #      - -buildmode=pie
+  #    env:
+  #      - CGO_ENABLED=1
+  #      - >-
+  #        {{- if eq .Os "darwin" }}
+  #          {{- if eq .Arch "amd64"}}CC=zig cc -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #          {{- if eq .Arch "arm64"}}CC=zig cc -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #        {{- end }}
+  #      - >-
+  #        {{- if eq .Os "darwin" }}
+  #          {{- if eq .Arch "amd64"}}CC=zig c++ -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #          {{- if eq .Arch "arm64"}}CC=zig c++ -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #        {{- end }}
+
+
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of uname.
+    name_template: >-
+      carbon_
+      {{- title .Os  }}_
+      {{- if eq .Arch "amd64" }}x86_64_{{ .Amd64 }}
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        format: zip
+
+# see full detail: https://goreleaser.com/customization/nfpm/
+nfpms:
+  -
+    id: carbon
+    package_name: carbon
+
+    maintainer: "Andres Bott <contact@andresbott.com>"
+    homepage: https://github.com/andresbott/go-carbon
+    description: |
+      sample application for the go-carbon framework
+      license: LGPL3
+    formats:
+      - deb
+
+    # Version Prerelease.
+    # Default is extracted from `version` if it is semver compatible.
+    #    prerelease: snapshot
+
+    #pacakge classification
+    section: default
+    priority: optional
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+# The lines beneath this are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj

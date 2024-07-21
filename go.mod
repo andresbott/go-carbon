@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/schema v1.3.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
+	github.com/philippgille/chromem-go v0.6.0
 	github.com/pquerna/otp v1.4.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/rs/zerolog v1.33.0

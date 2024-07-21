@@ -49,6 +49,8 @@ build-ui:
 build: package-ui ## use goreleaser to build
 	@goreleaser build --auto-snapshot --clean
 
+build-linux: package-ui ## use goreleaser to build a single linux target
+	@goreleaser release --clean --auto-snapshot --skip publish
 #==========================================================================================
 #  Swagger
 #==========================================================================================
@@ -93,6 +95,7 @@ release: check_env  ## release a new version
 	@git push --delete origin $(version) || true
 	@git push origin $(version) || true
 	@GITHUB_TOKEN=${GITHUB_TOKEN} docker build -t carbon-release:${COMMIT_SHA_SHORT} --secret id=GITHUB_TOKEN ./ -f zarf/Docker/release.Dockerfile
+	@ echo "using goreleaser config in zarf/.goreleaser-all.yaml"
 	@./zarf/Docker/dockerCP.sh carbon-build:${COMMIT_SHA_SHORT} /project/dist/ ${PWD_DIR}
 
 clean: ## clean build env
