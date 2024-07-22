@@ -156,3 +156,5 @@ func (m Manager) Delete(id, owner string) error {
 	}
 	return nil
 }
+
+// TODO, hard delete
