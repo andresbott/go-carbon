@@ -5,9 +5,9 @@ import (
 	"git.andresbott.com/Golang/carbon/app/config"
 	"git.andresbott.com/Golang/carbon/app/router"
 	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/factory"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/server"
+	"git.andresbott.com/Golang/carbon/libs/logzero"
 	"git.andresbott.com/Golang/carbon/libs/user"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
@@ -39,11 +39,11 @@ func runServer(configFile string) error {
 	}
 
 	// setup the logger
-	logOutput, err := factory.ConsoleFileOutput("")
+	logOutput, err := logzero.ConsoleFileOutput("")
 	if err != nil {
 		return err
 	}
-	l := factory.DefaultLogger(factory.GetLogLevel(cfg.Log.Level), logOutput)
+	l := logzero.DefaultLogger(logzero.GetLogLevel(cfg.Log.Level), logOutput)
 
 	l.Info().Str("version", Version).Str("component", "startup").
 		Msgf("running version %s, build date: %s, commint: %s ", Version, BuildTime, ShaVer)
