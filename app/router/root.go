@@ -3,7 +3,7 @@ package router
 import (
 	_ "embed"
 	"git.andresbott.com/Golang/carbon/app/spa"
-	"git.andresbott.com/Golang/carbon/internal/tasks"
+	"git.andresbott.com/Golang/carbon/internal/model/tasks"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
 	"git.andresbott.com/Golang/carbon/libs/user"

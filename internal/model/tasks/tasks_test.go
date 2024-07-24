@@ -3,7 +3,7 @@ package tasks_test
 import (
 	"errors"
 	"fmt"
-	"git.andresbott.com/Golang/carbon/internal/tasks"
+	"git.andresbott.com/Golang/carbon/internal/model/tasks"
 	"git.andresbott.com/Golang/carbon/libs/logzero"
 	"github.com/google/go-cmp/cmp"
 	"gorm.io/driver/sqlite"

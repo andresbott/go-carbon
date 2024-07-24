@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"git.andresbott.com/Golang/carbon/app/config"
 	"git.andresbott.com/Golang/carbon/app/router"
-	"git.andresbott.com/Golang/carbon/internal/tasks"
+	"git.andresbott.com/Golang/carbon/internal/model/tasks"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/server"

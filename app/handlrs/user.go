@@ -43,7 +43,7 @@ type loginData struct {
 
 type userStatus struct {
 	User     string `json:"user"`
-	LoggedIn bool   `json:"logged-in"`
+	LoggedIn bool   `json:"logged-req"`
 }
 
 func UserStatusHandler(session *auth.SessionMgr) http.Handler {

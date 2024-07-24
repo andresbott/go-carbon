@@ -2,7 +2,7 @@ package router
 
 import (
 	"git.andresbott.com/Golang/carbon/app/handlrs"
-	"git.andresbott.com/Golang/carbon/internal/tasks"
+	"git.andresbott.com/Golang/carbon/internal/model/tasks"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
@@ -53,7 +53,7 @@ func tasksApi(r *mux.Router, session *auth.SessionMgr, manager *tasks.Manager) {
 	// PUT
 	r.Path("/task").Methods(http.MethodPut).Handler(th.Create())
 	// GET | PUT | DELETE
-	r.Path("/task/{ID}").Handler(ProtectedPage)
+	r.Path("/task/{ID}").Methods(http.MethodGet).Handler(th.Read())
 }
 
 func userApi(apiRoute *mux.Router, session *auth.SessionMgr, users auth.UserLogin) {
