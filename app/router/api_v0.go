@@ -2,6 +2,7 @@ package router
 
 import (
 	"git.andresbott.com/Golang/carbon/app/handlrs"
+	"git.andresbott.com/Golang/carbon/internal/tasks"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
@@ -19,7 +20,7 @@ import (
 //	@externalDocs.description	OpenAPI
 //	@externalDocs.url			https://swagger.io/resources/open-api/
 
-func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin) error {
+func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin, manager *tasks.Manager) error {
 
 	r.Use(func(handler http.Handler) http.Handler {
 		// todo this should reflect prod vs non-prod property
@@ -29,23 +30,28 @@ func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin) error 
 	userApi(r, session, users)
 
 	// add tasks api
-	tasksApi(r, session, users)
+	tasksApi(r, session, manager)
 	return nil
 }
 
-func tasksApi(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin) {
+func tasksApi(r *mux.Router, session *auth.SessionMgr, manager *tasks.Manager) {
 	pageHandler := handlers.SimpleText{
 		Text: "Page protected by session auth",
 		Links: []handlers.Link{
 			{Text: "back to root", Url: "../"},
 		},
 	}
+	r.Use(session.Middleware)
+
+	th := handlrs.TaskHandler{
+		TaskManager: manager,
+	}
 
 	ProtectedPage := session.Middleware(&pageHandler)
 	// GET
 	r.Path("/tasks").Handler(ProtectedPage)
 	// PUT
-	r.Path("/task").Handler(ProtectedPage)
+	r.Path("/task").Methods(http.MethodPut).Handler(th.Create())
 	// GET | PUT | DELETE
 	r.Path("/task/{ID}").Handler(ProtectedPage)
 }

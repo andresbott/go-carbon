@@ -37,6 +37,7 @@
 * separate the auth handling from the login from rendenring
 * multiple log output stdout /  file / systemd journal
 * tracing?
+* The production middleware that prevents from exposing detailed error moessages should pring a error ID that can be checked in logs
 
 
 ## to be verified

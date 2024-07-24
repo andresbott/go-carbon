@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -90,13 +91,13 @@ func FsStore(path string, HashKey, BlockKey []byte) (*sessions.FilesystemStore, 
 	return sessions.NewFilesystemStore(path, HashKey, BlockKey), nil
 }
 
-// FS store can be created with: sessions.NewFilesystemStore("")
-
-type SessionData struct {
-	UserId   string // ID or username
-	DeviceID string // hold information about the device
-
+type UserData struct {
+	UserId          string // ID or username
+	DeviceID        string // hold information about the device
 	IsAuthenticated bool
+}
+type SessionData struct {
+	UserData
 
 	// expiration of the session, e.g. 2 days, after a login is required, this value can be updated by "keep me logged in"
 	Expiration time.Time
@@ -128,10 +129,13 @@ const (
 // Login is a convenience function to write a new logged-in session for a specific user id and write it
 func (auth *SessionMgr) Login(r *http.Request, w http.ResponseWriter, user string) error {
 	authData := SessionData{
-		UserId:          user,
-		IsAuthenticated: true,
-		Expiration:      time.Now().Add(auth.sessionDur),
-		ForceReAuth:     time.Now().Add(auth.maxSessionDur),
+		UserData: UserData{
+			UserId: user,
+
+			IsAuthenticated: true,
+		},
+		Expiration:  time.Now().Add(auth.sessionDur),
+		ForceReAuth: time.Now().Add(auth.maxSessionDur),
 	}
 	session, err := auth.store.Get(r, SessionName)
 	if err != nil {
@@ -143,7 +147,9 @@ func (auth *SessionMgr) Login(r *http.Request, w http.ResponseWriter, user strin
 // Logout is a convenience function to logout the current user
 func (auth *SessionMgr) Logout(r *http.Request, w http.ResponseWriter) error {
 	authData := SessionData{
-		IsAuthenticated: false,
+		UserData: UserData{
+			IsAuthenticated: false,
+		},
 	}
 	session, err := auth.store.Get(r, SessionName)
 	if err != nil {
@@ -217,6 +223,9 @@ func (auth *SessionMgr) ReadUpdate(r *http.Request, w http.ResponseWriter) (Sess
 	return SessionData{}, nil
 }
 
+const UserIdKey = "loggedInUserID"
+const UserIsLoggedInKey = "isUserLoggedIn"
+
 // Middleware is a simple session auth middleware that will only allow access if the user is logged in
 // this can be used as simple implementations or as inspiration to customize an authentication middleware
 func (auth *SessionMgr) Middleware(next http.Handler) http.Handler {
@@ -227,6 +236,14 @@ func (auth *SessionMgr) Middleware(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		if data.IsAuthenticated {
+			// add user ID into request context
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, UserIdKey, data.UserId)
+			ctx = context.WithValue(ctx, UserIsLoggedInKey, true)
+
+			req := r.WithContext(ctx)
+			*r = *req
+
 			next.ServeHTTP(w, r)
 			return
 		}

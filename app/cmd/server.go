@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.andresbott.com/Golang/carbon/app/config"
 	"git.andresbott.com/Golang/carbon/app/router"
+	"git.andresbott.com/Golang/carbon/internal/tasks"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/handlers"
 	"git.andresbott.com/Golang/carbon/libs/http/server"
@@ -12,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"sync"
 )
 
 const dbFile = "carbon.db"
@@ -102,12 +104,18 @@ func runServer(configFile string) error {
 		return fmt.Errorf("wrong user store in configuration, %s is not supported", cfg.Auth.UserStore.StoreType)
 	}
 
+	// init task manager
+	taskMngr, err := tasks.New(db, &sync.Mutex{})
+	if err != nil {
+		return fmt.Errorf("unable to create task manager :%v", err)
+	}
 	// Main APApplication handler
 	appCfg := router.AppCfg{
 		Logger:   l,
 		Db:       db,
 		AuthMngr: sessionAuth,
 		Users:    users,
+		Tasks:    taskMngr,
 	}
 	rootHandler, err := router.NewAppHandler(appCfg)
 	if err != nil {
