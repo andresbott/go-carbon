@@ -259,7 +259,6 @@ func TestTaskHandler_Read(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-
 			th, err := taskHandler()
 			if err != nil {
 				t.Fatal(err)
@@ -323,6 +322,317 @@ func TestTaskHandler_Read(t *testing.T) {
 				}
 			}
 
+		})
+	}
+}
+
+func TestTaskHandler_Update(t *testing.T) {
+	tcs := []struct {
+		name       string
+		req        func(id string) (*http.Request, error)
+		expecErr   string
+		expectCode int
+	}{
+		{
+			name: "successful request",
+			req: func(id string) (*http.Request, error) {
+				var jsonStr = []byte(`{"text":"updated text"}`)
+				req, err := http.NewRequest("PUT", "/api/tasks/"+id, bytes.NewBuffer(jsonStr))
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expectCode: http.StatusAccepted,
+		},
+		{
+			name: "not authenticated",
+			req: func(id string) (*http.Request, error) {
+				var jsonStr = []byte(`{"text":"updated text"}`)
+				req, err := http.NewRequest("PUT", "/api/tasks/"+id, bytes.NewBuffer(jsonStr))
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, false)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expecErr:   "user login information not provided in request context: isLoggedIn",
+			expectCode: http.StatusInternalServerError,
+		},
+		{
+			name: "empty payload",
+			req: func(id string) (*http.Request, error) {
+				req, err := http.NewRequest("PUT", "/api/tasks/"+id, nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expecErr:   "request had empty body",
+			expectCode: http.StatusBadRequest,
+		},
+		{
+			name: "malformed payload",
+			req: func(id string) (*http.Request, error) {
+				var jsonStr = []byte(`{"text":"updated te`)
+				req, err := http.NewRequest("PUT", "/api/tasks/"+id, bytes.NewBuffer(jsonStr))
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expecErr:   "unable to decode json: unexpected EOF",
+			expectCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			th, err := taskHandler()
+			if err != nil {
+				t.Fatal(err)
+			}
+			sampleTask := tasks.Task{
+				Text:    "sample",
+				OwnerId: "user1",
+			}
+			taskId, err := th.TaskManager.Create(&sampleTask)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := tc.req(taskId)
+			if err != nil {
+				t.Fatal(err)
+			}
+			recorder := httptest.NewRecorder()
+
+			handler := th.Update()
+			handler.ServeHTTP(recorder, req)
+
+			if tc.expecErr != "" {
+				if status := recorder.Code; status != tc.expectCode {
+					t.Errorf("handler returned wrong status code: got %v want %v",
+						status, tc.expectCode)
+				}
+				respText, err := io.ReadAll(recorder.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := strings.TrimSuffix(string(respText), "\n")
+				if got != tc.expecErr {
+					t.Errorf("unexpecter error message: got \"%s\" want \"%v\"",
+						got, tc.expecErr)
+				}
+
+			} else {
+
+				if status := recorder.Code; status != tc.expectCode {
+					t.Errorf("handler returned wrong status code: got %v want %v",
+						status, tc.expectCode)
+				}
+
+				task := tasks.Task{}
+				err = json.NewDecoder(recorder.Body).Decode(&task)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !IsValidUUID(task.ID) {
+					t.Error("returned task ID is not a valid UUID")
+				}
+			}
+
+		})
+	}
+}
+
+func TestTaskHandler_Delete(t *testing.T) {
+	tcs := []struct {
+		name       string
+		req        func(id string) (*http.Request, error)
+		expecErr   string
+		expectCode int
+	}{
+		{
+			name: "successful request",
+			req: func(id string) (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks/"+id, nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expectCode: http.StatusAccepted,
+		},
+		{
+			name: "fail for other user",
+			req: func(id string) (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks/"+id, nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user2")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expecErr:   "task with id: %s and owner user2 not found",
+			expectCode: http.StatusNotFound,
+		},
+		{
+			name: "not authenticated",
+			req: func(id string) (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks/"+id, nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, false)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": id,
+				})
+				return req, nil
+			},
+			expecErr:   "user login information not provided in request context: isLoggedIn",
+			expectCode: http.StatusInternalServerError,
+		},
+		{
+			name: "empty task ID",
+			req: func(id string) (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks/"+id, nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": "",
+				})
+				return req, nil
+			},
+			expecErr:   "no task id provided",
+			expectCode: http.StatusBadRequest,
+		},
+		{
+			name: "malformed payload",
+			req: func(id string) (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks/"+id, nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, "user1")
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+				req = mux.SetURLVars(req, map[string]string{
+					"ID": "ddd",
+				})
+				return req, nil
+			},
+			expecErr:   "task id is not a UUID",
+			expectCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+
+			th, err := taskHandler()
+			if err != nil {
+				t.Fatal(err)
+			}
+			sampleTask := tasks.Task{
+				Text:    "sample",
+				OwnerId: "user1",
+			}
+			taskId, err := th.TaskManager.Create(&sampleTask)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := tc.req(taskId)
+			if err != nil {
+				t.Fatal(err)
+			}
+			recorder := httptest.NewRecorder()
+
+			handler := th.Delete()
+			handler.ServeHTTP(recorder, req)
+
+			if tc.expecErr != "" {
+				if status := recorder.Code; status != tc.expectCode {
+					t.Errorf("handler returned wrong status code: got %v want %v",
+						status, tc.expectCode)
+				}
+				respText, err := io.ReadAll(recorder.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := strings.TrimSuffix(string(respText), "\n")
+
+				want := tc.expecErr
+				if strings.Contains(tc.expecErr, "%") {
+					want = fmt.Sprintf(tc.expecErr, taskId)
+				}
+				if got != want {
+					t.Errorf("unexpecter error message: got \"%s\" want \"%v\"",
+						got, want)
+				}
+
+			} else {
+
+				if status := recorder.Code; status != tc.expectCode {
+					t.Errorf("handler returned wrong status code: got %v want %v",
+						status, tc.expectCode)
+				}
+			}
 		})
 	}
 }

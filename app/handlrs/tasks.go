@@ -134,12 +134,104 @@ func (h *TaskHandler) Read() http.Handler {
 
 func (h *TaskHandler) Update() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "No Implemented", http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		taskId, ok := vars["ID"]
+		if !ok {
+			http.Error(w, fmt.Sprintf("could not extract id to read from request context"), http.StatusInternalServerError)
+			return
+		}
+		if taskId == "" {
+			http.Error(w, fmt.Sprint("no task id provided"), http.StatusBadRequest)
+			return
+		}
+		_, err := uuid.Parse(taskId)
+		if err != nil {
+			http.Error(w, fmt.Sprint("task id is not a UUID"), http.StatusBadRequest)
+			return
+		}
+
+		uData, err := auth.CtxCheckAuth(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if r.Body == nil {
+			http.Error(w, fmt.Sprintf("request had empty body"), http.StatusBadRequest)
+			return
+		}
+		payload := localTaskInput{}
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("unable to decode json: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+
+		if payload.Text == "" {
+			http.Error(w, "text cannot be empty req task payload", http.StatusBadRequest)
+			return
+		}
+		t := tasks.Task{
+			Text:    payload.Text,
+			Done:    payload.Done,
+			OwnerId: uData.UserId,
+		}
+		err = h.TaskManager.Update(taskId, uData.UserId, t)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("unable to store task in DB: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		output := localTaskOutput{
+			Id:   taskId,
+			Text: payload.Text,
+			Done: payload.Done,
+		}
+		respJson, err := json.Marshal(output)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write(respJson)
 	})
 }
 
 func (h *TaskHandler) Delete() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "No Implemented", http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		taskId, ok := vars["ID"]
+		if !ok {
+			http.Error(w, fmt.Sprintf("could not extract id to read from request context"), http.StatusInternalServerError)
+			return
+		}
+		if taskId == "" {
+			http.Error(w, fmt.Sprint("no task id provided"), http.StatusBadRequest)
+			return
+		}
+		_, err := uuid.Parse(taskId)
+		if err != nil {
+			http.Error(w, fmt.Sprint("task id is not a UUID"), http.StatusBadRequest)
+			return
+		}
+
+		uData, err := auth.CtxCheckAuth(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = h.TaskManager.Delete(taskId, uData.UserId)
+		if err != nil {
+			t := &tasks.TaskNotFound{}
+			if errors.As(err, &t) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+			} else {
+				http.Error(w, fmt.Sprintf("unable to get Task: %s", err.Error()), http.StatusInternalServerError)
+			}
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
 	})
 }

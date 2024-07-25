@@ -95,6 +95,27 @@ func (m Manager) Get(id, owner string) (Task, error) {
 	return t, nil
 }
 
+func (m Manager) Update(id, owner string, task Task) error {
+	if m.writeLock != nil {
+		m.writeLock.Lock()
+		defer m.writeLock.Unlock()
+	}
+
+	fieldMap := map[string]any{}
+	fieldMap["text"] = task.Text
+	fieldMap["done"] = task.Done
+
+	t := Task{}
+	result := m.db.Model(&t).
+		Where("ID = ? AND owner_id = ?", id, owner).
+		Updates(fieldMap)
+
+	if result.RowsAffected == 0 {
+		return &TaskNotFound{id: id, owner: owner}
+	}
+	return nil
+}
+
 func (m Manager) UpdateText(id, owner string, text string) error {
 	if m.writeLock != nil {
 		m.writeLock.Lock()

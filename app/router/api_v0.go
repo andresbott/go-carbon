@@ -11,15 +11,13 @@ import (
 	"net/http"
 )
 
-//	@title			Carbon Sample API
-//	@version		0.1
-//	@description	Sample implementation of an API using the carbon framework
-// TODO add license to swagger
-//	@BasePath		/api/v0
-
-//	@externalDocs.description	OpenAPI
-//	@externalDocs.url			https://swagger.io/resources/open-api/
-
+//		@title			Carbon Sample API
+//		@version		0.1
+//		@description	Sample implementation of an API using the carbon framework
+//	 	@License 		LGPL3
+//		@BasePath		/api/v0
+//		@externalDocs.description	OpenAPI
+//		@externalDocs.url			https://swagger.io/resources/open-api/
 func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin, manager *tasks.Manager) error {
 
 	r.Use(func(handler http.Handler) http.Handler {
@@ -35,25 +33,15 @@ func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin, manage
 }
 
 func tasksApi(r *mux.Router, session *auth.SessionMgr, manager *tasks.Manager) {
-	pageHandler := handlers.SimpleText{
-		Text: "Page protected by session auth",
-		Links: []handlers.Link{
-			{Text: "back to root", Url: "../"},
-		},
-	}
 	r.Use(session.Middleware)
-
 	th := handlrs.TaskHandler{
 		TaskManager: manager,
 	}
-
-	ProtectedPage := session.Middleware(&pageHandler)
-	// GET
-	r.Path("/tasks").Handler(ProtectedPage)
-	// PUT
-	r.Path("/task").Methods(http.MethodPut).Handler(th.Create())
-	// GET | PUT | DELETE
+	r.Path("/tasks").Methods(http.MethodGet).Handler(th.List())
+	r.Path("/task").Methods(http.MethodPost).Handler(th.Create())
 	r.Path("/task/{ID}").Methods(http.MethodGet).Handler(th.Read())
+	r.Path("/task/{ID}").Methods(http.MethodDelete).Handler(th.Delete())
+	r.Path("/task/{ID}").Methods(http.MethodPut).Handler(th.Update())
 }
 
 func userApi(apiRoute *mux.Router, session *auth.SessionMgr, users auth.UserLogin) {

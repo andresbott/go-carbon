@@ -129,6 +129,10 @@ func TestCrudTask(t *testing.T) {
 	setText(t, mngr, t1, "u1", "task1Updated", "")
 	setText(t, mngr, t1, "u2", "", fmt.Sprintf("task with id: %s and owner u2 not found", t1))
 
+	// update more than one
+	setMultiple(t, mngr, t1, "u1", tasks.Task{Text: "multiUpdate", Done: true}, "")
+	setMultiple(t, mngr, t1, "u2", tasks.Task{Text: "multiUpdate", Done: true}, fmt.Sprintf("task with id: %s and owner u2 not found", t1))
+
 	// delete the task
 	deleteTask(t, mngr, t1, "u2", fmt.Sprintf("task with id: %s and owner u2 not found", t1))
 	deleteTask(t, mngr, t1, "u1", "")
@@ -199,6 +203,26 @@ func setText(t *testing.T, mngr *tasks.Manager, taskId, owner, text, wantErr str
 	}
 	if task.Text != text {
 		t.Errorf("expect task value to be \"%s\", but got: \"%s\"", text, task.Text)
+	}
+}
+
+func setMultiple(t *testing.T, mngr *tasks.Manager, taskId, owner string, input tasks.Task, wantErr string) {
+	err := mngr.Update(taskId, owner, input)
+	if err != nil {
+		if wantErr != err.Error() {
+			t.Errorf("wanted error:\"%s\", but got: \"%s\"", wantErr, err.Error())
+		}
+		return
+	}
+	task, err := mngr.Get(taskId, owner)
+	if err != nil {
+		t.Error(err)
+	}
+	if task.Text != input.Text {
+		t.Errorf("expect task value to be \"%s\", but got: \"%s\"", input.Text, task.Text)
+	}
+	if task.Done != input.Done {
+		t.Errorf("expect task value to be \"%t\", but got: \"%t\"", input.Done, task.Done)
 	}
 }
 
