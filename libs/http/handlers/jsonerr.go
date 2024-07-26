@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type jsonErr struct {
+type HttpErr struct {
 	Error string
 	Code  int
 }
@@ -21,7 +21,7 @@ func jsonError(w http.ResponseWriter, error string, code int) {
 	if code == 0 {
 		code = http.StatusInternalServerError
 	}
-	payload := jsonErr{
+	payload := HttpErr{
 		Error: error,
 		Code:  code,
 	}

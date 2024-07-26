@@ -9,15 +9,83 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 type TaskHandler struct {
 	TaskManager *tasks.Manager
 }
 
+type localTaskList struct {
+	Count int
+	Tasks []localTaskOutput
+}
+
+const limitParam = "limit"
+const pageParam = "page"
+
 func (h *TaskHandler) List() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "No Implemented", http.StatusNotImplemented)
+		uData, err := auth.CtxCheckAuth(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		limitStr := r.URL.Query().Get(limitParam)
+		limit := 0
+		if limitStr != "" {
+			limit, err = strconv.Atoi(limitStr)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("unable to convert limit value to number"), http.StatusBadRequest)
+				return
+			}
+		}
+
+		pageStr := r.URL.Query().Get(pageParam)
+		page := 0
+		if pageStr != "" {
+			page, err = strconv.Atoi(pageStr)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("unable to convert page value to number"), http.StatusBadRequest)
+				return
+			}
+		}
+
+		items, err := h.TaskManager.List(uData.UserId, limit, page)
+		if err != nil {
+			t := &tasks.TaskNotFound{}
+			if errors.As(err, &t) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+			} else {
+				http.Error(w, fmt.Sprintf("unable to get Task: %s", err.Error()), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		taskItems := make([]localTaskOutput, len(items))
+		for i := 0; i < len(items); i++ {
+			taskItems[i] = localTaskOutput{
+				Id:   items[i].ID,
+				Text: items[i].Text,
+				Done: items[i].Done,
+			}
+		}
+
+		output := localTaskList{
+			Count: len(taskItems),
+			Tasks: taskItems,
+		}
+
+		respJson, err := json.Marshal(output)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(respJson)
+
 	})
 }
 
@@ -83,19 +151,9 @@ func (h *TaskHandler) Create() http.Handler {
 
 func (h *TaskHandler) Read() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		taskId, ok := vars["ID"]
-		if !ok {
-			http.Error(w, fmt.Sprintf("could not extract id to read from request context"), http.StatusInternalServerError)
-			return
-		}
-		if taskId == "" {
-			http.Error(w, fmt.Sprint("no task id provided"), http.StatusBadRequest)
-			return
-		}
-		_, err := uuid.Parse(taskId)
-		if err != nil {
-			http.Error(w, fmt.Sprint("task id is not a UUID"), http.StatusBadRequest)
+		taskId, hErr := getTaskId(r)
+		if hErr != nil {
+			http.Error(w, hErr.Error, hErr.Code)
 			return
 		}
 
@@ -134,19 +192,9 @@ func (h *TaskHandler) Read() http.Handler {
 
 func (h *TaskHandler) Update() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		taskId, ok := vars["ID"]
-		if !ok {
-			http.Error(w, fmt.Sprintf("could not extract id to read from request context"), http.StatusInternalServerError)
-			return
-		}
-		if taskId == "" {
-			http.Error(w, fmt.Sprint("no task id provided"), http.StatusBadRequest)
-			return
-		}
-		_, err := uuid.Parse(taskId)
-		if err != nil {
-			http.Error(w, fmt.Sprint("task id is not a UUID"), http.StatusBadRequest)
+		taskId, hErr := getTaskId(r)
+		if hErr != nil {
+			http.Error(w, hErr.Error, hErr.Code)
 			return
 		}
 
@@ -200,19 +248,9 @@ func (h *TaskHandler) Update() http.Handler {
 
 func (h *TaskHandler) Delete() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		taskId, ok := vars["ID"]
-		if !ok {
-			http.Error(w, fmt.Sprintf("could not extract id to read from request context"), http.StatusInternalServerError)
-			return
-		}
-		if taskId == "" {
-			http.Error(w, fmt.Sprint("no task id provided"), http.StatusBadRequest)
-			return
-		}
-		_, err := uuid.Parse(taskId)
-		if err != nil {
-			http.Error(w, fmt.Sprint("task id is not a UUID"), http.StatusBadRequest)
+		taskId, hErr := getTaskId(r)
+		if hErr != nil {
+			http.Error(w, hErr.Error, hErr.Code)
 			return
 		}
 
@@ -234,4 +272,34 @@ func (h *TaskHandler) Delete() http.Handler {
 		}
 		w.WriteHeader(http.StatusAccepted)
 	})
+}
+
+type httpErr struct {
+	Error string
+	Code  int
+}
+
+func getTaskId(r *http.Request) (string, *httpErr) {
+	vars := mux.Vars(r)
+	taskId, ok := vars["ID"]
+	if !ok {
+		return "", &httpErr{
+			Error: "could not extract id to read from request context",
+			Code:  http.StatusInternalServerError,
+		}
+	}
+	if taskId == "" {
+		return "", &httpErr{
+			Error: "no task id provided",
+			Code:  http.StatusBadRequest,
+		}
+	}
+	_, err := uuid.Parse(taskId)
+	if err != nil {
+		return "", &httpErr{
+			Error: "task id is not a UUID",
+			Code:  http.StatusBadRequest,
+		}
+	}
+	return taskId, nil
 }

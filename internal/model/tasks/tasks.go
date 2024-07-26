@@ -53,20 +53,20 @@ func (m *TaskNotFound) Error() string {
 	return fmt.Sprintf("task with id: %s and owner %s not found", m.id, m.owner)
 }
 
-func (m Manager) List(owner string, limit, page int) ([]Task, error) {
-	if limit == 0 {
-		limit = 20
+func (m Manager) List(owner string, size, page int) ([]Task, error) {
+	if size <= 0 {
+		size = 20
 	}
-	if limit >= 50 {
-		limit = 50
+	if size >= 50 {
+		size = 50
 	}
-	if limit <= 0 {
-		limit = 20
-	}
-	offset := limit * page
 
-	var tasks []Task
-	result := m.db.Where("owner_id = ?", owner).Model(&Task{}).Offset(offset).Limit(limit).Find(&tasks)
+	offset := size * (page - 1)
+	if offset <= 0 {
+		offset = 0
+	}
+	tasks := make([]Task, size)
+	result := m.db.Where("owner_id = ?", owner).Model(&Task{}).Offset(offset).Limit(size).Find(&tasks)
 	if result.Error != nil {
 		return nil, result.Error
 	}

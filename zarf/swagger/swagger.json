@@ -8,6 +8,37 @@
     },
     "basePath": "/api/v0",
     "paths": {
+        "/task": {
+            "post": {
+                "description": "Handles the live cycle of tasks: CRUD + list",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "create a new task",
+                "parameters": [
+                    {
+                        "description": "user login payload",
+                        "name": "UserData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlrs.loginData"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlrs.userStatus"
+                        }
+                    }
+                }
+            }
+        },
         "/user/login": {
             "post": {
                 "description": "Handles the user login process",
@@ -163,7 +194,7 @@
         "handlrs.userStatus": {
             "type": "object",
             "properties": {
-                "logged-in": {
+                "logged-req": {
                     "type": "boolean"
                 },
                 "user": {

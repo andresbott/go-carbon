@@ -11,13 +11,13 @@ import (
 	"net/http"
 )
 
-//		@title			Carbon Sample API
-//		@version		0.1
-//		@description	Sample implementation of an API using the carbon framework
-//	 	@License 		LGPL3
-//		@BasePath		/api/v0
-//		@externalDocs.description	OpenAPI
-//		@externalDocs.url			https://swagger.io/resources/open-api/
+// @title						Carbon Sample API
+// @version					0.1
+// @description				Sample implementation of an API using the carbon framework
+// @License					LGPL3
+// @BasePath					/api/v0
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin, manager *tasks.Manager) error {
 
 	r.Use(func(handler http.Handler) http.Handler {
@@ -32,16 +32,44 @@ func apiV0(r *mux.Router, session *auth.SessionMgr, users auth.UserLogin, manage
 	return nil
 }
 
+// tasksApi
+//
+//	@Summary		create and manage tasks
+//	@Description	Handles the live cycle of tasks: CRUD + list
+//	@Produce		json
+//	@Param			UserData	body		handlrs.loginData	true	"user login payload"
+//	@Success		200			{object}	handlrs.userStatus
+//	@Router			/user/login [post]
 func tasksApi(r *mux.Router, session *auth.SessionMgr, manager *tasks.Manager) {
 	r.Use(session.Middleware)
 	th := handlrs.TaskHandler{
 		TaskManager: manager,
 	}
 	r.Path("/tasks").Methods(http.MethodGet).Handler(th.List())
-	r.Path("/task").Methods(http.MethodPost).Handler(th.Create())
+
+	taskCreate(r, th)
 	r.Path("/task/{ID}").Methods(http.MethodGet).Handler(th.Read())
 	r.Path("/task/{ID}").Methods(http.MethodDelete).Handler(th.Delete())
 	r.Path("/task/{ID}").Methods(http.MethodPut).Handler(th.Update())
+}
+
+// TODO document swagger on the handlerS?
+
+// taskCreate
+//
+//	@Summary		create a new task
+//	@Description	Handles the live cycle of tasks: CRUD + list
+//	@Tags			Task
+//	@Produce		json
+//	@Param			UserData	body		handlrs.loginData	true	"user login payload"
+//	@Success		200			{object}	handlrs.userStatus
+//	@Router			/task [post]
+func taskCreate(r *mux.Router, th handlrs.TaskHandler) {
+	//r.Path("/task").Methods(http.MethodPost).Handler(th.Create())
+	r.Path("/task").Methods(http.MethodPost).Handler(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		h := th.Create()
+		h.ServeHTTP(writer, request)
+	}))
 }
 
 func userApi(apiRoute *mux.Router, session *auth.SessionMgr, users auth.UserLogin) {

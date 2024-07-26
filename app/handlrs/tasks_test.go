@@ -9,6 +9,7 @@ import (
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/logzero"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
@@ -16,10 +17,166 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 )
+
+const (
+	user1 = "user1"
+	user2 = "user2"
+)
+
+func TestTaskHandler_List(t *testing.T) {
+	tcs := []struct {
+		name       string
+		req        func() (*http.Request, error)
+		expecErr   string
+		expectCode int
+		expect     localTaskList
+	}{
+		{
+			name: "successful request",
+			req: func() (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks", nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, user1)
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+
+				q := req.URL.Query()
+				q.Add("limit", "2")
+				req.URL.RawQuery = q.Encode()
+
+				return req, nil
+			},
+			expectCode: http.StatusOK,
+			expect: localTaskList{
+				Count: 2,
+				Tasks: []localTaskOutput{
+					{Text: "task1_user1"},
+					{Text: "task2_user1"},
+				},
+			},
+		},
+		{
+			name: "success with different limit and page",
+			req: func() (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks", nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, user2)
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, true)
+				req = req.WithContext(ctx)
+
+				q := req.URL.Query()
+				q.Add(limitParam, "3")
+				q.Add(pageParam, "2")
+				req.URL.RawQuery = q.Encode()
+
+				return req, nil
+			},
+			expectCode: http.StatusOK,
+			expect: localTaskList{
+				Count: 3,
+				Tasks: []localTaskOutput{
+					{Text: "task4_user2"},
+					{Text: "task5_user2"},
+					{Text: "task6_user2"},
+				},
+			},
+		},
+		{
+			name: "not authenticated",
+			req: func() (*http.Request, error) {
+
+				req, err := http.NewRequest("GET", "/api/tasks", nil)
+				if err != nil {
+					return nil, err
+				}
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, auth.UserIdKey, user1)
+				ctx = context.WithValue(ctx, auth.UserIsLoggedInKey, false)
+				req = req.WithContext(ctx)
+
+				q := req.URL.Query()
+				q.Add("limit", "2")
+				req.URL.RawQuery = q.Encode()
+
+				return req, nil
+			},
+			expecErr:   "user login information not provided in request context: isLoggedIn",
+			expectCode: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := tc.req()
+			if err != nil {
+				t.Fatal(err)
+			}
+			th, err := taskHandler()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for i := 1; i <= 30; i++ {
+				_ = createTask(t, th.TaskManager, "task"+strconv.Itoa(i)+"_"+user1, user1)
+			}
+			for i := 1; i <= 30; i++ {
+				_ = createTask(t, th.TaskManager, "task"+strconv.Itoa(i)+"_"+user2, user2)
+			}
+
+			recorder := httptest.NewRecorder()
+
+			handler := th.List()
+			handler.ServeHTTP(recorder, req)
+
+			if tc.expecErr != "" {
+				if status := recorder.Code; status != tc.expectCode {
+					t.Errorf("handler returned wrong status code: got %v want %v",
+						status, tc.expectCode)
+				}
+				respText, err := io.ReadAll(recorder.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := strings.TrimSuffix(string(respText), "\n")
+				if got != tc.expecErr {
+					t.Errorf("unexpecter error message: got \"%s\" want \"%v\"",
+						got, tc.expecErr)
+				}
+
+			} else {
+
+				if status := recorder.Code; status != tc.expectCode {
+					t.Errorf("handler returned wrong status code: got %v want %v",
+						status, tc.expectCode)
+				}
+
+				got := localTaskList{}
+				err = json.NewDecoder(recorder.Body).Decode(&got)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if diff := cmp.Diff(got, tc.expect, cmpopts.IgnoreFields(localTaskOutput{}, "Id")); diff != "" {
+					t.Errorf("unexpected value (-got +want)\n%s", diff)
+				}
+
+			}
+
+		})
+	}
+}
 
 func TestTaskHandler_Create(t *testing.T) {
 	tcs := []struct {
@@ -659,4 +816,19 @@ func taskHandler() (*TaskHandler, error) {
 		TaskManager: mngr,
 	}
 	return &th, nil
+}
+
+func createTask(t *testing.T, mngr *tasks.Manager, content, owner string) string {
+	task := tasks.Task{
+		Text:    content,
+		OwnerId: owner,
+	}
+	id, err := mngr.Create(&task)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id == "" {
+		t.Error("returned id should not be empty")
+	}
+	return id
 }
