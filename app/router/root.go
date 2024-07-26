@@ -3,6 +3,7 @@ package router
 import (
 	_ "embed"
 	"git.andresbott.com/Golang/carbon/app/spa"
+	"git.andresbott.com/Golang/carbon/internal/model/tasks"
 	"git.andresbott.com/Golang/carbon/libs/auth"
 	"git.andresbott.com/Golang/carbon/libs/http/middleware"
 	"git.andresbott.com/Golang/carbon/libs/user"
@@ -34,6 +35,7 @@ type AppCfg struct {
 	Db       *gorm.DB
 	AuthMngr *auth.SessionMgr
 	Users    auth.UserLogin
+	Tasks    *tasks.Manager
 }
 
 // NewAppHandler generates the main url router handler to be used in the server
@@ -50,7 +52,7 @@ func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 	// static demos users
 
 	// attach API v0 handlers
-	err := apiV0(r.PathPrefix("/api/v0").Subrouter(), cfg.AuthMngr, cfg.Users) // api/v0 routes
+	err := apiV0(r.PathPrefix("/api/v0").Subrouter(), cfg.AuthMngr, cfg.Users, cfg.Tasks) // api/v0 routes
 	if err != nil {
 		return nil, err
 	}

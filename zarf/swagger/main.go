@@ -8,7 +8,7 @@ import (
 	"github.com/flowchartsman/swaggerui"
 )
 
-//go:embed swagger.json
+//go:embed swagger.yaml
 var spec []byte
 
 func main() {

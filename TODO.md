@@ -37,7 +37,12 @@
 * separate the auth handling from the login from rendenring
 * multiple log output stdout /  file / systemd journal
 * tracing?
-
+* The production middleware that prevents from exposing detailed error moessages should pring a error ID that can be checked in logs
+* at some point a task runner/manager will be needed:
+  * start a task in background, e.g. scan a dir
+  * have limited amount of tasks running
+  * be able to assign tasks to workers (?)
+  * retrieve status of stask
 
 ## to be verified
 * make sure the user manager uses a salt when storing passwords

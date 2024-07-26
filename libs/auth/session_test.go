@@ -276,26 +276,29 @@ func TestProcessSessionData(t *testing.T) {
 	}{
 		{
 			name: "session valid",
-			in: auth.SessionData{IsAuthenticated: true,
+			in: auth.SessionData{
+				UserData: auth.UserData{
+					IsAuthenticated: true,
+				},
 				Expiration:  getTime("10m"),
 				ForceReAuth: getTime("1m"),
 			},
-			want: auth.SessionData{IsAuthenticated: true},
+			want: auth.SessionData{UserData: auth.UserData{IsAuthenticated: true}},
 		},
 		{
 			name: "session expired",
-			in: auth.SessionData{IsAuthenticated: true,
+			in: auth.SessionData{UserData: auth.UserData{IsAuthenticated: true},
 				Expiration: getTime("-1s"),
 			},
-			want: auth.SessionData{IsAuthenticated: false},
+			want: auth.SessionData{UserData: auth.UserData{IsAuthenticated: false}},
 		},
 		{
 			name: "session NOT expired, but hard logout",
-			in: auth.SessionData{IsAuthenticated: true,
+			in: auth.SessionData{UserData: auth.UserData{IsAuthenticated: true},
 				Expiration:  getTime("10m"),
 				ForceReAuth: getTime("-1s"),
 			},
-			want: auth.SessionData{IsAuthenticated: false},
+			want: auth.SessionData{UserData: auth.UserData{IsAuthenticated: false}},
 		},
 	}
 

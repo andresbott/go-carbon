@@ -1,4 +1,4 @@
-package factory
+package logzero
 
 import (
 	"github.com/rs/zerolog"
