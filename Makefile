@@ -3,8 +3,9 @@ PWD_DIR := ${CURDIR}
 
 default: help
 
+
 #==========================================================================================
-#  Testing
+##@ Testing
 #==========================================================================================
 test: ## run go tests
 	@go test ./... -cover
@@ -25,16 +26,15 @@ verify: package-ui test lint benchmark license-check ## run all tests
 
 
 #==========================================================================================
-#  Running
+##@ Running
 #==========================================================================================
-run: serve ## alias to make serve
-serve: ## start the GO service
+run: ## start the GO service
 	@go run main.go start -c zarf/appData/config.yaml
 
-serve-ui: package-ui serve## build the UI and start the GO service
+run-ui: package-ui serve## build the UI and start the GO service
 
 #==========================================================================================
-#  Building
+##@ Building
 #==========================================================================================
 package-ui: build-ui ## build the web and copy into Go pacakge
 	rm -rf ./app/spa/files/ui*
@@ -53,18 +53,17 @@ build: package-ui ## use goreleaser to build
 build-linux: package-ui ## use goreleaser to build a single linux target
 	@goreleaser release --clean --auto-snapshot --skip publish
 #==========================================================================================
-#  Swagger
+##@  Swagger
 #==========================================================================================
-swagger: swagger-build ## build and serve the swagger spec
+swagger:  ## build and serve the swagger spec
 	@cd zarf/swagger && go run main.go
 
-# this uses https://github.com/swaggo/swag
-swagger-build: ## build the swagger spec
-	swag fmt
-	swag init -g app/router/api_v0.go -ot "json" -o zarf/swagger/
+swagger-editor: ## run swagger editor in docker
+	docker run  -p 8087:8080 -v ${PWD_DIR}/zarf/swagger:/tmp -e SWAGGER_FILE=/tmp/swagger.yaml  swaggerapi/swagger-editor
+
 
 #==========================================================================================
-#  Docker
+##@   Docker
 #==========================================================================================
 docker-base: ## build the base docker image used to build the project
 	@docker build ./ -t carbon-builder:latest -f zarf/Docker/base.Dockerfile
@@ -111,6 +110,6 @@ clean: ## clean build env
 #==========================================================================================
 #  Help
 #==========================================================================================
-help: ## help command
-	@egrep '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST)  | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
-
+.PHONY: help
+help: # Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

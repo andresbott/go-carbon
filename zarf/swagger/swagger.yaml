@@ -1,0 +1,208 @@
+openapi: 3.0.1
+info:
+  title: Carbon Sample API
+  description: Sample implementation of an API using the carbon framework
+  contact: {}
+  version: 0.1.0
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+servers:
+  - url: /api/v0
+paths:
+
+  /tasks:
+    get:
+      tags:
+        - Task
+      summary: 'List tasks for the current logged in user'
+      description: ''
+      operationId: ''
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: specify the size of the list, hard limit to 50
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: specify the page you want to load
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+
+  /task:
+    post:
+      tags:
+        - Task
+      summary: create a new task
+      description: 'Handles the live cycle of tasks: CRUD + list'
+      requestBody:
+        description: user login payload
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/handlrs.loginData'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlrs.userStatus'
+
+
+
+
+
+  /user/login:
+    post:
+      tags:
+        - User
+      summary: Login a user
+      description: Handles the user login process
+      requestBody:
+        description: user login payload
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/handlrs.loginData'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlrs.userStatus'
+      x-codegen-request-body-name: UserData
+  /user/logout:
+    get:
+      tags:
+        - User
+      summary: Logout a user
+      description: Logs out the current user based on the session cookie
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlrs.userStatus'
+    put:
+      tags:
+        - User
+      summary: Logout a user
+      description: Logs out the current user based on the session cookie
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlrs.userStatus'
+    post:
+      tags:
+        - User
+      summary: Logout a user
+      description: Logs out the current user based on the session cookie
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlrs.userStatus'
+  /user/options:
+    get:
+      tags:
+        - User
+      summary: Get user options
+      description: >-
+        Get options specific to the currently logged-in user based on the
+        session cookie
+      responses:
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/middleware.jsonErr'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/middleware.jsonErr'
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/middleware.jsonErr'
+  /user/status:
+    get:
+      tags:
+        - User
+      summary: Get user status
+      description: Show the satus information about the current user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlrs.userStatus'
+
+components:
+  schemas:
+    TaskList:
+      type: object
+      properties:
+        Count:
+          type: integer
+        Tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+
+    Task:
+      type: object
+      properties:
+        Id:
+          type: string
+        Text:
+          type: string
+        Done:
+          type: boolean
+
+
+    handlrs.loginData:
+      type: object
+      properties:
+        password:
+          type: string
+        user:
+          type: string
+    handlrs.userStatus:
+      type: object
+      properties:
+        logged-req:
+          type: boolean
+        user:
+          type: string
+    middleware.jsonErr:
+      type: object
+      properties:
+        code:
+          type: integer
+        error:
+          type: string
+
