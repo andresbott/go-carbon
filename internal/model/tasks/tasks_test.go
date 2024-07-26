@@ -66,8 +66,8 @@ func TestListTasks(t *testing.T) {
 		}
 	})
 
-	t.Run("differnt user and page", func(t *testing.T) {
-		items, err := mngr.List(User2, 3, 1)
+	t.Run("different user and page", func(t *testing.T) {
+		items, err := mngr.List(User2, 3, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
