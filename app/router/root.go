@@ -52,7 +52,7 @@ func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 	// static demos users
 
 	// attach API v0 handlers
-	err := apiV0(r.PathPrefix("/api/v0").Subrouter(), cfg.AuthMngr, cfg.Users, cfg.Tasks) // api/v0 routes
+	err := apiV0(r, cfg.AuthMngr, cfg.Users, cfg.Tasks) // api/v0 routes
 	if err != nil {
 		return nil, err
 	}

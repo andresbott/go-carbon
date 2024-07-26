@@ -29,7 +29,7 @@ verify: package-ui test lint benchmark license-check ## run all tests
 ##@ Running
 #==========================================================================================
 run: ## start the GO service
-	@go run main.go start -c zarf/appData/config.yaml
+	@CARBON_LOG_LEVEL="debug" go run main.go start -c zarf/appData/config.yaml
 
 run-ui: package-ui serve## build the UI and start the GO service
 
