@@ -16,6 +16,8 @@
   * handle overall expiration with cookie expiration instead of using own mchanism? 
   * check Options.MaxAge of the session is <= 0
 * keep me logged in is part of session management
+* auth to be disabled: use default user, e.g when only one user will use the instaletion
+  * use a header value for the user, used when externalizing auth
 * add logout into session management
 * json error middlware to strip tailing \n
 * improve request loggger to print the error message

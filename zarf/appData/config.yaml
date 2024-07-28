@@ -18,6 +18,10 @@ Auth:
       - Name: "demo"
         Pw: "demo"
         Enabled: true
+      - Name: "admin"
+        Pw: "admin"
+        Enabled: true
+
 
 Log:
   Level: "info"

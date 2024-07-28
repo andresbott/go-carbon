@@ -5,15 +5,15 @@ import UserLogin from '@/components/UserLogin.vue'
 </script>
 
 <template>
-  <vertical :center-content="true">
-    <template v-slot:main>
-      <horizontal :center-content="true">
-        <template v-slot:default>
-          <UserLogin />
+    <vertical :center-content="true">
+        <template v-slot:main>
+            <horizontal :center-content="true">
+                <template v-slot:default>
+                    <UserLogin />
+                </template>
+            </horizontal>
         </template>
-      </horizontal>
-    </template>
 
-    <template v-slot:footer> </template>
-  </vertical>
+        <template v-slot:footer> </template>
+    </vertical>
 </template>

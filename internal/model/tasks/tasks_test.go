@@ -88,7 +88,6 @@ func TestListTasks(t *testing.T) {
 
 }
 func TestCrudTask(t *testing.T) {
-
 	// initialize DB
 	db, err := gorm.Open(sqlite.Open(inMemorySqlite), &gorm.Config{
 		Logger: logzero.NewZeroGorm(*logzero.DefaultLogger(logzero.InfoLevel, nil), logzero.Cfg{IgnoreRecordNotFoundError: true}),
@@ -114,7 +113,7 @@ func TestCrudTask(t *testing.T) {
 	readTask(t, mngr, t3, "u2", "task1", "")
 	readTask(t, mngr, t3, "u3", "", fmt.Sprintf("task with id: %s and owner u3 not found", t3))
 
-	// Complete a task
+	// Complete a Task
 	setDone(t, mngr, t1, "u1", true, "")
 	// send complete again
 	setDone(t, mngr, t1, "u1", true, "")
@@ -133,7 +132,7 @@ func TestCrudTask(t *testing.T) {
 	setMultiple(t, mngr, t1, "u1", tasks.Task{Text: "multiUpdate", Done: true}, "")
 	setMultiple(t, mngr, t1, "u2", tasks.Task{Text: "multiUpdate", Done: true}, fmt.Sprintf("task with id: %s and owner u2 not found", t1))
 
-	// delete the task
+	// delete the Task
 	deleteTask(t, mngr, t1, "u2", fmt.Sprintf("task with id: %s and owner u2 not found", t1))
 	deleteTask(t, mngr, t1, "u1", "")
 
@@ -163,17 +162,13 @@ func readTask(t *testing.T, mngr *tasks.Manager, taskId, owner, want string, wan
 		}
 	}
 	if task.Text != want {
-		t.Errorf("expect task value to be \"%s\", but got: \"%s\"", want, task.Text)
+		t.Errorf("expect Task value to be \"%s\", but got: \"%s\"", want, task.Text)
 	}
 }
 
 func setDone(t *testing.T, mngr *tasks.Manager, taskId, owner string, val bool, wantErr string) {
 	var err error
-	if val {
-		err = mngr.Complete(taskId, owner)
-	} else {
-		err = mngr.Pending(taskId, owner)
-	}
+	err = mngr.Update(taskId, owner, "", &val)
 	if err != nil {
 		if wantErr != err.Error() {
 			t.Errorf("wanted error:\"%s\", but got: \"%s\"", wantErr, err.Error())
@@ -185,12 +180,12 @@ func setDone(t *testing.T, mngr *tasks.Manager, taskId, owner string, val bool, 
 		t.Error(err)
 	}
 	if task.Done != val {
-		t.Errorf("expect task value to be \"%t\", but got: \"%t\"", val, task.Done)
+		t.Errorf("expect Task value to be \"%t\", but got: \"%t\"", val, task.Done)
 	}
 }
 
 func setText(t *testing.T, mngr *tasks.Manager, taskId, owner, text, wantErr string) {
-	err := mngr.UpdateText(taskId, owner, text)
+	err := mngr.Update(taskId, owner, text, nil)
 	if err != nil {
 		if wantErr != err.Error() {
 			t.Errorf("wanted error:\"%s\", but got: \"%s\"", wantErr, err.Error())
@@ -202,12 +197,12 @@ func setText(t *testing.T, mngr *tasks.Manager, taskId, owner, text, wantErr str
 		t.Error(err)
 	}
 	if task.Text != text {
-		t.Errorf("expect task value to be \"%s\", but got: \"%s\"", text, task.Text)
+		t.Errorf("expect Task value to be \"%s\", but got: \"%s\"", text, task.Text)
 	}
 }
 
 func setMultiple(t *testing.T, mngr *tasks.Manager, taskId, owner string, input tasks.Task, wantErr string) {
-	err := mngr.Update(taskId, owner, input)
+	err := mngr.Update(taskId, owner, input.Text, &input.Done)
 	if err != nil {
 		if wantErr != err.Error() {
 			t.Errorf("wanted error:\"%s\", but got: \"%s\"", wantErr, err.Error())
@@ -219,10 +214,10 @@ func setMultiple(t *testing.T, mngr *tasks.Manager, taskId, owner string, input 
 		t.Error(err)
 	}
 	if task.Text != input.Text {
-		t.Errorf("expect task value to be \"%s\", but got: \"%s\"", input.Text, task.Text)
+		t.Errorf("expect Task value to be \"%s\", but got: \"%s\"", input.Text, task.Text)
 	}
 	if task.Done != input.Done {
-		t.Errorf("expect task value to be \"%t\", but got: \"%t\"", input.Done, task.Done)
+		t.Errorf("expect Task value to be \"%t\", but got: \"%t\"", input.Done, task.Done)
 	}
 }
 

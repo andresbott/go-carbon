@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type jsonErr struct {
@@ -51,6 +52,7 @@ func JsonErrMiddleware(next http.Handler, genericMessage bool) http.Handler {
 				jsonError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
 			msg = string(msgB)
+			msg = strings.Trim(msg, "\n")
 		}
 		if IsStatusError(code) {
 			jsonError(w, msg, code)

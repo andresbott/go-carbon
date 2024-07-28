@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 )
 
 // Level defines log levels.
@@ -54,8 +55,20 @@ func DefaultLogger(lev Level, w io.Writer) *zerolog.Logger {
 
 }
 
+func humanDur(i interface{}) string {
+	switch d := i.(type) {
+	case time.Duration:
+		return d.String()
+	case float64:
+		return time.Duration(d * float64(time.Second)).String()
+	default:
+		return i.(string)
+	}
+}
+
 func ConsoleFileOutput(file string) (zerolog.LevelWriter, error) {
 	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout}
+
 	if file != "" {
 		f, err := os.Create(file)
 		if err != nil {
