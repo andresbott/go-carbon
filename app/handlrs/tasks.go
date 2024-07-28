@@ -58,13 +58,14 @@ func (h *TaskHandler) List() http.Handler {
 			if errors.As(err, &t) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
-				http.Error(w, fmt.Sprintf("unable to get Task: %s", err.Error()), http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("unable to get task: %s", err.Error()), http.StatusInternalServerError)
 			}
 			return
 		}
 
 		taskItems := make([]localTaskOutput, len(items))
 		for i := 0; i < len(items); i++ {
+
 			taskItems[i] = localTaskOutput{
 				Id:   items[i].ID,
 				Text: items[i].Text,
@@ -91,12 +92,12 @@ func (h *TaskHandler) List() http.Handler {
 
 type localTaskInput struct {
 	Text string `json:"text"`
-	Done bool
+	Done *bool
 }
 type localTaskOutput struct {
 	Id   string `json:"id"`
 	Text string `json:"text"`
-	Done bool
+	Done bool   `json:"done"`
 }
 
 func (h *TaskHandler) Create() http.Handler {
@@ -122,9 +123,15 @@ func (h *TaskHandler) Create() http.Handler {
 			http.Error(w, "text cannot be empty req task payload", http.StatusBadRequest)
 			return
 		}
+
+		if payload.Done == nil {
+			f := false
+			payload.Done = &f
+		}
+
 		t := tasks.Task{
 			Text:    payload.Text,
-			Done:    payload.Done,
+			Done:    *payload.Done,
 			OwnerId: uData.UserId,
 		}
 		Id, err := h.TaskManager.Create(&t)
@@ -136,7 +143,7 @@ func (h *TaskHandler) Create() http.Handler {
 		output := localTaskOutput{
 			Id:   Id,
 			Text: payload.Text,
-			Done: payload.Done,
+			Done: *payload.Done,
 		}
 		respJson, err := json.Marshal(output)
 		if err != nil {
@@ -144,7 +151,7 @@ func (h *TaskHandler) Create() http.Handler {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(respJson)
 	})
 }
@@ -169,11 +176,10 @@ func (h *TaskHandler) Read() http.Handler {
 			if errors.As(err, &t) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
-				http.Error(w, fmt.Sprintf("unable to get Task: %s", err.Error()), http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("unable to get task: %s", err.Error()), http.StatusInternalServerError)
 			}
 			return
 		}
-
 		output := localTaskOutput{
 			Id:   Task.ID,
 			Text: Task.Text,
@@ -215,34 +221,22 @@ func (h *TaskHandler) Update() http.Handler {
 			return
 		}
 
+		taskText := ""
 		if payload.Text == "" {
-			http.Error(w, "text cannot be empty req task payload", http.StatusBadRequest)
-			return
+			taskText = payload.Text
 		}
-		t := tasks.Task{
-			Text:    payload.Text,
-			Done:    payload.Done,
-			OwnerId: uData.UserId,
+
+		var taskDone *bool
+		if payload.Done != nil {
+			taskDone = payload.Done
 		}
-		err = h.TaskManager.Update(taskId, uData.UserId, t)
+
+		err = h.TaskManager.Update(taskId, uData.UserId, taskText, taskDone)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("unable to store task in DB: %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
-
-		output := localTaskOutput{
-			Id:   taskId,
-			Text: payload.Text,
-			Done: payload.Done,
-		}
-		respJson, err := json.Marshal(output)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_, _ = w.Write(respJson)
 	})
 }
 
@@ -266,7 +260,7 @@ func (h *TaskHandler) Delete() http.Handler {
 			if errors.As(err, &t) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
-				http.Error(w, fmt.Sprintf("unable to get Task: %s", err.Error()), http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("unable to get task: %s", err.Error()), http.StatusInternalServerError)
 			}
 			return
 		}

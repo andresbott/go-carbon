@@ -49,7 +49,13 @@ func NewAppHandler(cfg AppCfg) (*MyAppHandler, error) {
 		return middleware.PromLogMiddleware(handler, hist, cfg.Logger)
 	})
 
-	// static demos users
+	// TODO not to have in production
+	throttle := middleware.ReqThrottle{
+		MinDelay: 1500 * time.Millisecond,
+		MaxDelay: 3000 * time.Millisecond,
+		On:       true,
+	}
+	r.Use(throttle.Throttle)
 
 	// attach API v0 handlers
 	err := apiV0(r, cfg.AuthMngr, cfg.Users, cfg.Tasks) // api/v0 routes

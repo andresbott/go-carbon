@@ -199,7 +199,7 @@ func TestTaskHandler_Create(t *testing.T) {
 				req = req.WithContext(ctx)
 				return req, nil
 			},
-			expectCode: http.StatusCreated,
+			expectCode: http.StatusOK,
 		},
 		{
 			name: "not authenticated",
@@ -300,6 +300,7 @@ func TestTaskHandler_Create(t *testing.T) {
 				if !IsValidUUID(task.ID) {
 					t.Error("returned task ID is not a valid UUID")
 				}
+
 			}
 
 		})
@@ -615,15 +616,6 @@ func TestTaskHandler_Update(t *testing.T) {
 					t.Errorf("handler returned wrong status code: got %v want %v",
 						status, tc.expectCode)
 				}
-
-				task := tasks.Task{}
-				err = json.NewDecoder(recorder.Body).Decode(&task)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !IsValidUUID(task.ID) {
-					t.Error("returned task ID is not a valid UUID")
-				}
 			}
 
 		})
@@ -819,9 +811,11 @@ func taskHandler() (*TaskHandler, error) {
 }
 
 func createTask(t *testing.T, mngr *tasks.Manager, content, owner string) string {
+	b := false
 	task := tasks.Task{
 		Text:    content,
 		OwnerId: owner,
+		Done:    b,
 	}
 	id, err := mngr.Create(&task)
 	if err != nil {

@@ -20,61 +20,43 @@ const userRef = ref(null)
 const passRef = ref(null)
 
 const load = () => {
-  user.login(userRef.value, passRef.value)
+    user.login(userRef.value, passRef.value)
 }
-
-// in, out, loading, unauthorized, err
 const status = ref('out')
-
-const getStatus = computed(() => {
-  console.log('get status')
-  if (user._isLoggedIn === false) {
-    return 'out'
-  }
-})
-
-// redirect to root if logged in
-// onBeforeMount(() => {
-//   user.checkState((loggedIn)=>{
-//     // TODO responsabilit of the router?
-//     if (loggedIn){
-//       router.push("/")
-//     }
-//   })
-// })
-
 const visible = ref(true)
 </script>
 
 <template>
-  <Card>
-    <template #title>Log in</template>
-    <template #content>
-      <div v-focustrap class="flex flex-column items-center gap-4">
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-user"></i>
-          </InputGroupAddon>
-          <InputText placeholder="Username" v-on:keyup.enter="load" v-model="userRef" />
-        </InputGroup>
+    <Card>
+        <template #title>Log in</template>
+        <template #content>
+            <div v-focustrap class="flex flex-column items-center gap-4">
+                <InputGroup>
+                    <InputGroupAddon>
+                        <i class="pi pi-user"></i>
+                    </InputGroupAddon>
+                    <InputText placeholder="Username" v-on:keyup.enter="load" v-model="userRef" />
+                </InputGroup>
 
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-lock"></i>
-          </InputGroupAddon>
-          <Password
-            v-model="passRef"
-            v-on:keyup.enter="load"
-            placeholder="Password"
-            :feedback="false"
-            toggleMask
-          />
-        </InputGroup>
+                <InputGroup>
+                    <InputGroupAddon>
+                        <i class="pi pi-lock"></i>
+                    </InputGroupAddon>
+                    <Password
+                        v-model="passRef"
+                        v-on:keyup.enter="load"
+                        placeholder="Password"
+                        :feedback="false"
+                        toggleMask
+                    />
+                </InputGroup>
 
-        <Message v-if="user.wrongPw" severity="error" closable>Wrong username or password</Message>
-        <Button label="Log in" class="w-full" @click="load" />
-      </div>
-    </template>
-  </Card>
-  <loadingScreen v-if="user.loading" />
+                <Message v-if="user.wrongPw" severity="error" closable
+                    >Wrong username or password</Message
+                >
+                <Button label="Log in" class="w-full" @click="load" />
+            </div>
+        </template>
+    </Card>
+    <loadingScreen v-if="user.loading" />
 </template>

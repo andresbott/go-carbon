@@ -16,15 +16,15 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(PrimeVue, {
-  // Default theme configuration
-  theme: {
-    preset: CustomTheme,
-    options: {
-      prefix: 'c',
-      darkModeSelector: 'system',
-      cssLayer: false
+    // Default theme configuration
+    theme: {
+        preset: CustomTheme,
+        options: {
+            prefix: 'c',
+            darkModeSelector: 'system',
+            cssLayer: false
+        }
     }
-  }
 })
 
 app.use(router)
