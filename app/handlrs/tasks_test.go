@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"git.andresbott.com/Golang/carbon/internal/model/tasks"
-	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/logzero"
+	"github.com/andresbott/go-carbon/internal/model/tasks"
+	"github.com/andresbott/go-carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/logzero"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"

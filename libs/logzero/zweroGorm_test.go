@@ -2,7 +2,7 @@ package logzero_test
 
 import (
 	"bytes"
-	"git.andresbott.com/Golang/carbon/libs/logzero"
+	"github.com/andresbott/go-carbon/libs/logzero"
 	"github.com/rs/zerolog"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

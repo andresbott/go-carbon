@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.andresbott.com/Golang/carbon/app/cmd"
+	"github.com/andresbott/go-carbon/app/cmd"
 )
 
 func main() {

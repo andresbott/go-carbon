@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"git.andresbott.com/Golang/carbon/app/config"
-	"git.andresbott.com/Golang/carbon/app/router"
-	"git.andresbott.com/Golang/carbon/internal/model/tasks"
-	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers"
-	"git.andresbott.com/Golang/carbon/libs/http/server"
-	"git.andresbott.com/Golang/carbon/libs/logzero"
-	"git.andresbott.com/Golang/carbon/libs/user"
+	"github.com/andresbott/go-carbon/app/config"
+	"github.com/andresbott/go-carbon/app/router"
+	"github.com/andresbott/go-carbon/internal/model/tasks"
+	"github.com/andresbott/go-carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/http/handlers"
+	"github.com/andresbott/go-carbon/libs/http/server"
+	"github.com/andresbott/go-carbon/libs/logzero"
+	"github.com/andresbott/go-carbon/libs/user"
+
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

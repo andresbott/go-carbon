@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bytes"
-	"git.andresbott.com/Golang/carbon/libs/limitedbuffer"
+	"github.com/andresbott/go-carbon/libs/limitedbuffer"
 	"net/http"
 	"strconv"
 )

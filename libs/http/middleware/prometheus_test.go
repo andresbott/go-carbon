@@ -2,7 +2,7 @@ package middleware_test
 
 import (
 	"fmt"
-	"git.andresbott.com/Golang/carbon/libs/http/middleware"
+	"github.com/andresbott/go-carbon/libs/http/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"

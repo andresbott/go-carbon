@@ -1,7 +1,7 @@
 package config
 
 import (
-	"git.andresbott.com/Golang/carbon/libs/config"
+	"github.com/andresbott/go-carbon/libs/config"
 	"strconv"
 )
 

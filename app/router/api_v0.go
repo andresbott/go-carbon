@@ -1,11 +1,11 @@
 package router
 
 import (
-	"git.andresbott.com/Golang/carbon/app/handlrs"
-	"git.andresbott.com/Golang/carbon/internal/model/tasks"
-	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers"
-	"git.andresbott.com/Golang/carbon/libs/http/middleware"
+	"github.com/andresbott/go-carbon/app/handlrs"
+	"github.com/andresbott/go-carbon/internal/model/tasks"
+	"github.com/andresbott/go-carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/http/handlers"
+	"github.com/andresbott/go-carbon/libs/http/middleware"
 	"github.com/gorilla/mux"
 	"net/http"
 )

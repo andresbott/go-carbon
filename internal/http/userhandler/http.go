@@ -3,8 +3,8 @@ package userhandler
 import (
 	_ "embed"
 	"fmt"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers"
-	"git.andresbott.com/Golang/carbon/libs/user"
+	"github.com/andresbott/go-carbon/libs/http/handlers"
+	"github.com/andresbott/go-carbon/libs/user"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/schema"
 	"gorm.io/gorm"

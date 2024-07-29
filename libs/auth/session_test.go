@@ -2,7 +2,7 @@ package auth_test
 
 import (
 	"bytes"
-	"git.andresbott.com/Golang/carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/auth"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"

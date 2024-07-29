@@ -2,7 +2,7 @@ package handlrs
 
 import (
 	"encoding/json"
-	"git.andresbott.com/Golang/carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/auth"
 	"net/http"
 )
 

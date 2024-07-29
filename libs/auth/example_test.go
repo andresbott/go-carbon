@@ -2,7 +2,7 @@ package auth_test
 
 import (
 	"fmt"
-	"git.andresbott.com/Golang/carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/auth"
 	"github.com/gorilla/securecookie"
 	"net/http"
 	"net/http/httptest"

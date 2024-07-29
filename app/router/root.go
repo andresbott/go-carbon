@@ -2,11 +2,11 @@ package router
 
 import (
 	_ "embed"
-	"git.andresbott.com/Golang/carbon/app/spa"
-	"git.andresbott.com/Golang/carbon/internal/model/tasks"
-	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/http/middleware"
-	"git.andresbott.com/Golang/carbon/libs/user"
+	"github.com/andresbott/go-carbon/app/spa"
+	"github.com/andresbott/go-carbon/internal/model/tasks"
+	"github.com/andresbott/go-carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/http/middleware"
+	"github.com/andresbott/go-carbon/libs/user"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"

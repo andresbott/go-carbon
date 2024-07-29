@@ -17,9 +17,9 @@ builds:
       - v3
     ldflags:
       - -s -w
-      - -X git.andresbott.com/Golang/carbon/app/cmd.Version={{.Version}}
-      - -X git.andresbott.com/Golang/carbon/app/cmd.BuildTime={{.Date}}
-      - -X git.andresbott.com/Golang/carbon/app/cmd.ShaVer={{.Commit}}
+      - -X github.com/andresbott/go-carbon/app/cmd.Version={{.Version}}
+      - -X github.com/andresbott/go-carbon/app/cmd.BuildTime={{.Date}}
+      - -X github.com/andresbott/go-carbon/app/cmd.ShaVer={{.Commit}}
     env:
       - CGO_ENABLED=1
       - >- 

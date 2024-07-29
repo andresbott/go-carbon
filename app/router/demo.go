@@ -1,8 +1,8 @@
 package router
 
 import (
-	"git.andresbott.com/Golang/carbon/libs/auth"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers"
+	"github.com/andresbott/go-carbon/libs/auth"
+	"github.com/andresbott/go-carbon/libs/http/handlers"
 	"github.com/gorilla/mux"
 	"net/http"
 )

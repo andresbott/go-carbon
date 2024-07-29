@@ -1,7 +1,7 @@
 package middleware_test
 
 import (
-	"git.andresbott.com/Golang/carbon/libs/http/middleware"
+	"github.com/andresbott/go-carbon/libs/http/middleware"
 	"github.com/google/go-cmp/cmp"
 	"io"
 	"net/http/httptest"

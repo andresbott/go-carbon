@@ -2,7 +2,8 @@ package spa
 
 import (
 	"embed"
-	"git.andresbott.com/Golang/carbon/libs/http/handlers"
+	"github.com/andresbott/go-carbon/libs/http/handlers"
+
 	"net/http"
 )
 

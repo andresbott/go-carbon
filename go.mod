@@ -1,4 +1,4 @@
-module git.andresbott.com/Golang/carbon
+module github.com/andresbott/go-carbon
 
 go 1.22
 
