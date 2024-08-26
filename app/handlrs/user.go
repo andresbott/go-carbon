@@ -67,6 +67,30 @@ func UserStatusHandler(session *auth.SessionMgr) http.Handler {
 
 	})
 }
+
+const anonymousUser = "anonymous"
+
+type autDisabledStatus struct {
+	AuthDisabled bool   `json:"auth-disabled,omitempty"`
+	User         string `json:"user"`
+}
+
+func AuthDisabledHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		jsonData := autDisabledStatus{
+			AuthDisabled: true,
+			User:         anonymousUser,
+		}
+		err := json.NewEncoder(w).Encode(jsonData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+	})
+}
+
 func UserLogoutHandler(session *auth.SessionMgr) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

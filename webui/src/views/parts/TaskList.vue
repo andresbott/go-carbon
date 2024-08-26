@@ -45,9 +45,7 @@ const products = tasks.tasks
 .taskDone{
   text-decoration: line-through;
 }
-.space {
 
-}
 </style>
 <template>
     <Fluid class="inline-flex ">

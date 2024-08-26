@@ -14,7 +14,7 @@ import (
 
 type Server struct {
 	server    http.Server
-	obsServer http.Server
+	obsServer *http.Server
 	logger    func(msg string, isErr bool)
 }
 
@@ -34,7 +34,7 @@ func New(cfg Cfg) (*Server, error) {
 		return nil, fmt.Errorf("server address canot be empty")
 
 	}
-	if cfg.SkipObs && cfg.ObsAddr == "" {
+	if cfg.SkipObs == false && cfg.ObsAddr == "" {
 		return nil, fmt.Errorf("obserbavility server address canot be empty")
 	}
 
@@ -44,11 +44,13 @@ func New(cfg Cfg) (*Server, error) {
 			Addr:    cfg.Addr,
 			Handler: cfg.Handler,
 		},
+	}
 
-		obsServer: http.Server{
+	if !cfg.SkipObs {
+		s.obsServer = &http.Server{
 			Addr:    cfg.ObsAddr,
 			Handler: cfg.ObsHandler,
-		},
+		}
 	}
 	return &s, nil
 }
@@ -74,18 +76,20 @@ func (srv *Server) Start() error {
 	}()
 
 	// observability server
-	go func() {
-		ln, err := net.Listen("tcp", srv.obsServer.Addr)
-		if err != nil {
-			panic(fmt.Sprintf("error starting obserbability server: %v", err))
-		}
-		srv.logMsg(fmt.Sprintf("obserbability server started on: %s", srv.obsServer.Addr), false)
+	if srv.obsServer != nil {
+		go func() {
+			ln, err := net.Listen("tcp", srv.obsServer.Addr)
+			if err != nil {
+				panic(fmt.Sprintf("error starting obserbability server: %v", err))
+			}
+			srv.logMsg(fmt.Sprintf("obserbability server started on: %s", srv.obsServer.Addr), false)
 
-		if err := srv.obsServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
-			panic(fmt.Sprintf("error in obserbability server: %v", err))
-		}
+			if err := srv.obsServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
+				panic(fmt.Sprintf("error in obserbability server: %v", err))
+			}
 
-	}()
+		}()
+	}
 
 	ln, err := net.Listen("tcp", srv.server.Addr)
 	if err != nil {
@@ -111,8 +115,10 @@ func (srv *Server) Stop() {
 	}
 	srv.logMsg("server stopped", false)
 
-	if err := srv.obsServer.Shutdown(ctx); err != nil {
-		srv.logMsg(fmt.Sprintf("observability server shutdown: %v", err), true)
+	if srv.obsServer != nil {
+		if err := srv.obsServer.Shutdown(ctx); err != nil {
+			srv.logMsg(fmt.Sprintf("observability server shutdown: %v", err), true)
+		}
 	}
 	srv.logMsg("observability  server stopped", false)
 }

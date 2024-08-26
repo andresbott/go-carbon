@@ -45,6 +45,9 @@
   * have limited amount of tasks running
   * be able to assign tasks to workers (?)
   * retrieve status of stask
+* move version information to metainfo package
+## web ui
+* adapt user store to be able to handle authentication disabled
 
 ## to be verified
 * make sure the user manager uses a salt when storing passwords

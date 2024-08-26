@@ -42,7 +42,7 @@ func demo(r *mux.Router) error {
 	//if err != nil {
 	//	return nil, err
 	//}
-	//r.PathPrefix("/user").Handler(userDbHandler.UserHandler("/user"))
+	//r.PathPrefix("/user").StaticInfo(userDbHandler.UserHandler("/user"))
 
 	return nil
 

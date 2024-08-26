@@ -8,7 +8,6 @@ import (
 	"github.com/andresbott/go-carbon/internal/model/tasks"
 	"github.com/andresbott/go-carbon/libs/auth"
 	"github.com/andresbott/go-carbon/libs/logzero"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
